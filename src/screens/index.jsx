@@ -48,7 +48,8 @@ export function HomeScreen() {
 
   return (
     <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+      position: 'fixed', top: 0, left: 0, width: '100%',
+      height: 'var(--real-vh, 100vh)',
       background: 'var(--dark)', overflow: 'hidden',
     }}>
       {!isOnline && (

@@ -2,13 +2,25 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 
-// ─── Zoom verhindern (iOS PWA) ────────────────────────────────────────────
+// ─── Viewport-Höhe fix für iOS Safari + Android Chrome ───────────────────
+// Problem: 100vh ist auf beiden Plattformen unterschiedlich
+// Lösung: echte Fensterhöhe per JS messen und als CSS-Variable setzen
+function setVH() {
+  const vh = window.innerHeight
+  document.querySelectorAll('.app-shell').forEach(el => {
+    el.style.height = `${vh}px`
+  })
+  // Auch für HomeScreen der kein app-shell verwendet
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`)
+}
+
+setVH()
+window.addEventListener('resize', setVH)
+window.addEventListener('orientationchange', () => setTimeout(setVH, 100))
+
+// ─── Zoom verhindern ──────────────────────────────────────────────────────
 document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false })
 document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false })
-document.addEventListener('gestureend', e => e.preventDefault(), { passive: false })
-document.addEventListener('touchmove', e => {
-  if (e.scale !== undefined && e.scale !== 1) e.preventDefault()
-}, { passive: false })
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -186,3 +198,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </ErrorBoundary>
 )
+
+// Nach React-Mount nochmals messen
+setTimeout(setVH, 50)
+setTimeout(setVH, 300)

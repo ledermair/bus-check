@@ -136,9 +136,15 @@ export function setupOfflineSync(store) {
 
 // ─── Send email (with offline fallback) ──────────────────────────────────
 export async function sendPDF({ pdfDataUri, filename, to, cc, subject, body, store }) {
+  // DataURI → reines Base64 extrahieren
+  let pdfBase64 = pdfDataUri
+  if (pdfDataUri && pdfDataUri.includes('base64,')) {
+    pdfBase64 = pdfDataUri.split('base64,')[1]
+  }
+
   const payload = {
     id: Date.now() + Math.random(),
-    pdfDataUri,
+    pdfBase64,  // reines Base64, kein DataURI-Prefix
     filename,
     to,
     cc,
@@ -148,7 +154,7 @@ export async function sendPDF({ pdfDataUri, filename, to, cc, subject, body, sto
   }
 
   if (!navigator.onLine) {
-    store.getState().addToQueue(payload)
+    store.getState().addToQueue({ ...payload, pdfDataUri }) // DataURI für Queue speichern
     return { queued: true }
   }
 
@@ -161,25 +167,21 @@ export async function sendPDF({ pdfDataUri, filename, to, cc, subject, body, sto
 
     if (res.ok) return { sent: true }
 
-    // Fehlerdetails aus der API lesen
     let errorDetail = `HTTP ${res.status}`
     try {
       const errData = await res.json()
       errorDetail = errData.detail || errData.error || errorDetail
     } catch {}
 
-    // Bei 4xx nicht in Queue – das ist ein Konfigurationsfehler
     if (res.status >= 400 && res.status < 500) {
       return { error: true, detail: errorDetail }
     }
 
-    // Bei 5xx in Queue für späteren Retry
-    store.getState().addToQueue(payload)
+    store.getState().addToQueue({ ...payload, pdfDataUri })
     return { queued: true, detail: errorDetail }
 
   } catch (e) {
-    // Netzwerkfehler → Queue
-    store.getState().addToQueue(payload)
+    store.getState().addToQueue({ ...payload, pdfDataUri })
     return { queued: true, detail: e.message }
   }
 }
