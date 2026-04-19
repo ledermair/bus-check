@@ -112,49 +112,45 @@ export function setupOfflineSync(store) {
 
     for (const item of queue) {
       try {
+        // PDF-Daten aus sessionStorage holen
+        const pdfBase64 = sessionStorage.getItem(`qpdf_${item.id}`) || ''
+        const payload = { ...item, pdfBase64 }
+
         const res = await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
+          body: JSON.stringify(payload),
         })
         if (res.ok) {
           store.getState().removeFromQueue(item.id)
         }
       } catch (e) {
-        // Still offline or error – keep in queue
-        break
+        break // Still offline
       }
     }
   }
 
   window.addEventListener('online', tryFlush)
-  // Also try on load
   if (navigator.onLine) tryFlush()
-
   return () => window.removeEventListener('online', tryFlush)
 }
 
 // ─── Send email (with offline fallback) ──────────────────────────────────
 export async function sendPDF({ pdfDataUri, filename, to, cc, subject, body, store }) {
-  // DataURI → reines Base64 extrahieren
-  let pdfBase64 = pdfDataUri
+  // DataURI → reines Base64
+  let pdfBase64 = ''
   if (pdfDataUri && pdfDataUri.includes('base64,')) {
     pdfBase64 = pdfDataUri.split('base64,')[1]
+  } else if (pdfDataUri) {
+    pdfBase64 = pdfDataUri
   }
 
-  const payload = {
-    id: Date.now() + Math.random(),
-    pdfBase64,  // reines Base64, kein DataURI-Prefix
-    filename,
-    to,
-    cc,
-    subject,
-    body,
-    timestamp: new Date().toISOString(),
-  }
+  const id = Date.now() + Math.random()
+  const meta = { id, filename, to, cc, subject, body, timestamp: new Date().toISOString() }
+  const payload = { ...meta, pdfBase64 }
 
   if (!navigator.onLine) {
-    store.getState().addToQueue({ ...payload, pdfDataUri }) // DataURI für Queue speichern
+    store.getState().addToQueue(payload) // addToQueue speichert pdfBase64 in sessionStorage
     return { queued: true }
   }
 
@@ -177,11 +173,11 @@ export async function sendPDF({ pdfDataUri, filename, to, cc, subject, body, sto
       return { error: true, detail: errorDetail }
     }
 
-    store.getState().addToQueue({ ...payload, pdfDataUri })
+    store.getState().addToQueue(payload)
     return { queued: true, detail: errorDetail }
 
   } catch (e) {
-    store.getState().addToQueue({ ...payload, pdfDataUri })
+    store.getState().addToQueue(payload)
     return { queued: true, detail: e.message }
   }
 }

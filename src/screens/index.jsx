@@ -6,7 +6,7 @@ import {
 } from '../components'
 import { useAppStore, useFormStore } from '../store'
 import { LOGO_B64, BUS_VIEWS } from '../brand'
-import { openCamera, ocrKilometerstand, getGPS, sendPDF, formatFilename } from '../utils/helpers'
+import { openCamera, ocrKilometerstand, getGPS, sendPDF, formatFilename, compressForPDF } from '../utils/helpers'
 import { generateKontrollePDF, generateUnfallPDF } from '../utils/pdfGen'
 
 const BUS_POSITIONS = [
@@ -342,12 +342,18 @@ export function AbfahrtStep2() {
     }
   }, [needsPhoto])
 
-  const handleNewPhoto = (img) => {
+  const handleNewPhoto = async (img) => {
     setKontrolle({ licensePhoto: img })
     if (img && driver?.nr) {
       const ym = new Date().toISOString().slice(0, 7)
       setLicensePhotoDate(driver.nr, ym)
-      setLicensePhotoStore(driver.nr, img)
+      // Stark komprimieren für localStorage (max 400px, Q 0.5)
+      try {
+        const compressed = await compressForPDF(img, 400, 0.5)
+        setLicensePhotoStore(driver.nr, compressed || img)
+      } catch {
+        setLicensePhotoStore(driver.nr, img)
+      }
     }
   }
 

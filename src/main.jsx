@@ -18,6 +18,18 @@ setVH()
 window.addEventListener('resize', setVH)
 window.addEventListener('orientationchange', () => setTimeout(setVH, 100))
 
+// ─── Alten localStorage aufräumen (Fotos die früher gespeichert wurden) ──
+try {
+  const raw = localStorage.getItem('buscheck-store')
+  if (raw) {
+    const parsed = JSON.parse(raw)
+    if (parsed?.state?.licensePhotos) {
+      delete parsed.state.licensePhotos
+      localStorage.setItem('buscheck-store', JSON.stringify(parsed))
+    }
+  }
+} catch {}
+
 // ─── Zoom verhindern ──────────────────────────────────────────────────────
 document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false })
 document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false })
