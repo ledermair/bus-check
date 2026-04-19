@@ -169,6 +169,10 @@ export function HomeScreen() {
             ⚙ Verwaltung
           </span>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 8px' }}>·</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => nav('/install')}>
+            📲 Installationshilfe
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 8px' }}>·</span>
           <span style={{ fontSize: 11, color: isOnline ? 'var(--green)' : 'var(--red)' }}>
             {isOnline ? '● Online' : '● Offline'}
           </span>
@@ -349,7 +353,8 @@ export function AbfahrtStep2() {
       setLicensePhotoDate(driver.nr, ym)
       // Stark komprimieren für localStorage (max 400px, Q 0.5)
       try {
-        const compressed = await compressForPDF(img, 400, 0.5)
+        // Scheckkarten-Größe: 85×54mm → max 340×216px
+        const compressed = await compressForPDF(img, 340, 0.55)
         setLicensePhotoStore(driver.nr, compressed || img)
       } catch {
         setLicensePhotoStore(driver.nr, img)
@@ -709,10 +714,14 @@ export function KontrolleStep5({ isAbfahrt = true }) {
   const total = isAbfahrt ? 6 : 5
   const photosCount = Object.values(kontrolle.busPhotos || {}).filter(Boolean).length
 
+  const needsLicense = useAppStore(s => s.needsLicensePhoto)
+  const driver2 = useAppStore(s => s.driver)
+  const licenseRequired = isAbfahrt && needsLicense(driver2?.nr)
+
   const checks = [
     { label: 'Bus ausgewählt', ok: !!kontrolle.bus },
     { label: 'Fahrauftrag', ok: !!(kontrolle.fahrauftrag || kontrolle.ziel) },
-    ...(isAbfahrt ? [{ label: 'Führerscheinfoto', ok: !!kontrolle.licensePhoto }] : []),
+    ...(licenseRequired ? [{ label: 'Führerscheinfoto', ok: !!kontrolle.licensePhoto }] : []),
     { label: `Rundum-Fotos (${photosCount}/8)`, ok: photosCount === 8 },
     { label: `Kilometerstand${kontrolle.kmValue ? ': ' + parseInt(kontrolle.kmValue).toLocaleString('de-AT') + ' km' : ''}`, ok: !!kontrolle.kmValue },
     { label: 'Ölstand-Foto', ok: !!kontrolle.oelPhoto },
@@ -1410,126 +1419,6 @@ export function AdminScreen() {
   const [newDriverName, setNewDriverName] = useState('')
 
   // ─── PIN Schutz ───────────────────────────────────────────────────────
-  const ADMIN_PIN = '6130'
-  const [pinUnlocked, setPinUnlocked] = useState(false)
-  const [pinInput, setPinInput] = useState('')
-  const [pinError, setPinError] = useState(false)
-
-  const checkPin = () => {
-    if (pinInput === ADMIN_PIN) {
-      setPinUnlocked(true)
-      setPinError(false)
-    } else {
-      setPinError(true)
-      setPinInput('')
-      setTimeout(() => setPinError(false), 2000)
-    }
-  }
-
-  if (!pinUnlocked) {
-    return (
-      <div className="app-shell">
-        <ScreenHeader title="Verwaltung" subtitle="PIN erforderlich" onBack={() => nav('/')} />
-        <div className="screen-body" style={{
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 20,
-        }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: 18,
-            background: 'rgba(245,216,0,0.1)',
-            border: '1px solid rgba(245,216,0,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28,
-          }}>🔒</div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Verwaltung geschützt</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Bitte PIN eingeben um fortzufahren</div>
-          </div>
-
-          {/* PIN Anzeige */}
-          <div style={{ display: 'flex', gap: 12, margin: '8px 0' }}>
-            {[0,1,2,3].map(i => (
-              <div key={i} style={{
-                width: 44, height: 52,
-                background: pinError ? 'rgba(204,0,0,0.15)' : 'var(--dark3)',
-                border: `2px solid ${pinError ? 'var(--red)' : pinInput.length > i ? 'var(--yellow)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: 10,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, color: 'var(--yellow)',
-                transition: 'all 0.15s',
-              }}>
-                {pinInput.length > i ? '●' : ''}
-              </div>
-            ))}
-          </div>
-
-          {pinError && (
-            <div style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>
-              ✕ Falscher PIN – bitte erneut versuchen
-            </div>
-          )}
-
-          {/* Numpad */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, width: '100%', maxWidth: 260 }}>
-            {[1,2,3,4,5,6,7,8,9].map(n => (
-              <button key={n}
-                onClick={() => { if (pinInput.length < 4) setPinInput(p => p + n) }}
-                style={{
-                  padding: '16px 0', background: 'var(--dark3)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 12, color: 'var(--text)', fontSize: 22,
-                  fontWeight: 600, cursor: 'pointer', fontFamily: 'Barlow, sans-serif',
-                  transition: 'background 0.1s',
-                }}>
-                {n}
-              </button>
-            ))}
-            {/* Löschen */}
-            <button
-              onClick={() => setPinInput(p => p.slice(0, -1))}
-              style={{
-                padding: '16px 0', background: 'var(--dark3)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 12, color: 'var(--text-muted)', fontSize: 18,
-                cursor: 'pointer', fontFamily: 'Barlow, sans-serif',
-              }}>
-              ⌫
-            </button>
-            {/* 0 */}
-            <button
-              onClick={() => { if (pinInput.length < 4) setPinInput(p => p + '0') }}
-              style={{
-                padding: '16px 0', background: 'var(--dark3)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 12, color: 'var(--text)', fontSize: 22,
-                fontWeight: 600, cursor: 'pointer', fontFamily: 'Barlow, sans-serif',
-              }}>
-              0
-            </button>
-            {/* OK */}
-            <button
-              onClick={checkPin}
-              disabled={pinInput.length !== 4}
-              style={{
-                padding: '16px 0',
-                background: pinInput.length === 4
-                  ? 'linear-gradient(135deg, var(--green-light), var(--green-dark))'
-                  : 'var(--dark4)',
-                border: 'none', borderRadius: 12,
-                color: pinInput.length === 4 ? '#fff' : 'var(--text-muted)',
-                fontSize: 15, fontWeight: 700, cursor: pinInput.length === 4 ? 'pointer' : 'default',
-                fontFamily: 'Barlow, sans-serif', transition: 'all 0.15s',
-              }}>
-              OK
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  // ─── Ende PIN Schutz ──────────────────────────────────────────────────
-
   const save = () => {
     updateSettings(local)
     nav('/')
@@ -1737,6 +1626,173 @@ export function AdminScreen() {
       </div>
       <div className="screen-footer">
         <button className="btn-primary" onClick={save}>Speichern & Zurück</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── INSTALL SCREEN ───────────────────────────────────────────────────────
+export function InstallScreen() {
+  const nav = useNavigate()
+
+  // Gerät erkennen
+  const ua = navigator.userAgent || ''
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream
+  const isAndroid = /Android/.test(ua)
+  const isSamsung = /SamsungBrowser/.test(ua)
+  const isChrome = /Chrome/.test(ua) && !isSamsung
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches
+
+  const device = isIOS ? 'ios' : isAndroid ? 'android' : 'desktop'
+
+  const Step = ({ nr, text, sub }) => (
+    <div style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
+      <div style={{
+        minWidth: 30, height: 30, borderRadius: '50%',
+        background: 'var(--green)', color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, fontWeight: 700, flexShrink: 0,
+      }}>{nr}</div>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{text}</div>
+        {sub && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.5 }}>{sub}</div>}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="app-shell">
+      <ScreenHeader title="Installationshilfe" subtitle="BusCheck als App installieren" onBack={() => nav('/')} />
+      <div className="screen-body fade-up">
+
+        {isStandalone && (
+          <div className="ok-chip info-chip" style={{ marginBottom: 16 }}>
+            <span>✓</span>
+            <span>BusCheck ist bereits als App installiert!</span>
+          </div>
+        )}
+
+        {/* Geräte-Badge */}
+        <div style={{
+          background: 'var(--dark3)', borderRadius: 10,
+          padding: '10px 14px', marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 10,
+          border: '1px solid var(--border)',
+        }}>
+          <span style={{ fontSize: 22 }}>
+            {device === 'ios' ? '🍎' : device === 'android' ? '🤖' : '💻'}
+          </span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>
+              {device === 'ios' ? 'iPhone / iPad erkannt' : device === 'android' ? 'Android-Gerät erkannt' : 'Desktop / PC erkannt'}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {isSamsung ? 'Samsung Internet Browser' : isChrome ? 'Chrome Browser' : isIOS ? 'Safari Browser' : 'Browser'}
+            </div>
+          </div>
+        </div>
+
+        {/* iOS Anleitung */}
+        {device === 'ios' && (
+          <Card icon="🍎" title="Installation auf iPhone / iPad">
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+              BusCheck muss über <strong style={{ color: 'var(--text)' }}>Safari</strong> geöffnet werden – andere Browser (Chrome, Firefox) unterstützen die Installation nicht.
+            </div>
+            <Step nr="1" text="Safari öffnen"
+              sub="Falls du gerade einen anderen Browser verwendest, öffne die URL in Safari." />
+            <Step nr="2" text='Tippe auf das Teilen-Symbol ⬆️'
+              sub='Das Symbol befindet sich unten in der Mitte der Safari-Leiste.' />
+            <Step nr="3" text='"Zum Home-Bildschirm" wählen 📲'
+              sub='Scrolle im Menü nach unten und tippe auf "Zum Home-Bildschirm hinzufügen".' />
+            <Step nr="4" text='"Hinzufügen" bestätigen'
+              sub='Tippe oben rechts auf "Hinzufügen". BusCheck erscheint jetzt als App-Symbol.' />
+            <Step nr="5" text="App vom Home-Bildschirm starten"
+              sub="Ab jetzt immer das BusCheck-Symbol tippen – nicht über Safari öffnen!" />
+
+            <div className="info-chip" style={{ marginTop: 8 }}>
+              <span>💡</span>
+              <span>Tipp: iOS 16.4+ unterstützt Push-Benachrichtigungen in PWA-Apps.</span>
+            </div>
+          </Card>
+        )}
+
+        {/* Android Anleitung */}
+        {device === 'android' && (
+          <Card icon="🤖" title="Installation auf Android">
+            {isChrome ? (
+              <>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                  Mit <strong style={{ color: 'var(--text)' }}>Chrome</strong> kannst du BusCheck direkt installieren.
+                </div>
+                <Step nr="1" text="Banner antippen"
+                  sub='Chrome zeigt unten automatisch "App installieren" oder "Zum Startbildschirm hinzufügen" an.' />
+                <Step nr="2" text="Falls kein Banner: Menü öffnen"
+                  sub='Tippe auf die drei Punkte ⋮ oben rechts.' />
+                <Step nr="3" text='"App installieren" wählen'
+                  sub='Oder: "Zum Startbildschirm hinzufügen" – je nach Chrome-Version.' />
+                <Step nr="4" text='"Installieren" bestätigen'
+                  sub='BusCheck erscheint als App-Symbol am Startbildschirm.' />
+                <Step nr="5" text="App vom Startbildschirm öffnen"
+                  sub="Das BusCheck-Symbol tippen – nicht mehr über Chrome!" />
+              </>
+            ) : isSamsung ? (
+              <>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                  Samsung Internet Browser unterstützt PWA-Installation.
+                </div>
+                <Step nr="1" text="Menü öffnen"
+                  sub="Tippe auf die drei Striche ☰ unten rechts." />
+                <Step nr="2" text='"Seite hinzufügen" wählen'
+                  sub='Dann "Zum Startbildschirm hinzufügen".' />
+                <Step nr="3" text='"Hinzufügen' bestätigen"
+                  sub="BusCheck erscheint als App-Symbol." />
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                  Für die beste Erfahrung verwende <strong style={{ color: 'var(--text)' }}>Chrome</strong> auf Android.
+                </div>
+                <Step nr="1" text="URL kopieren"
+                  sub={`bus-check-mu.vercel.app`} />
+                <Step nr="2" text="In Chrome öffnen"
+                  sub="Chrome aus dem App-Store laden falls nicht vorhanden." />
+                <Step nr="3" text="Installationsbanner bestätigen"
+                  sub='Tippe auf "App installieren" oder im Menü ⋮ auf "Zum Startbildschirm".' />
+              </>
+            )}
+          </Card>
+        )}
+
+        {/* Desktop Anleitung */}
+        {device === 'desktop' && (
+          <Card icon="💻" title="Installation am Desktop">
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+              BusCheck ist für Smartphones optimiert. Am Desktop kann die App in Chrome oder Edge installiert werden.
+            </div>
+            <Step nr="1" text="Chrome oder Edge verwenden"
+              sub="Diese Browser unterstützen PWA-Installation am Desktop." />
+            <Step nr="2" text="Installations-Symbol in der Adressleiste"
+              sub='Klicke auf das ⊕-Symbol rechts in der Adressleiste oder im Menü auf "App installieren".' />
+            <Step nr="3" text='"Installieren" bestätigen'
+              sub="BusCheck öffnet als eigenes Fenster ohne Browser-Oberfläche." />
+          </Card>
+        )}
+
+        <Card icon="❓" title="Häufige Fragen">
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Die App ist zu klein / zu groß?</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+            Stelle sicher dass du die App über das App-Symbol startest, nicht im Browser. Im Browser-Tab kann Zoomen die Darstellung beeinflussen.
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Fotos werden nicht gespeichert?</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+            BusCheck speichert Fotos nur für die aktuelle Sitzung. Nach dem Beenden der App sind die Fotos weg – das ist gewollt für Datenschutz.
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>App bekommt keine E-Mails?</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Prüfe ob eine Internetverbindung besteht. Berichte die offline erstellt wurden werden automatisch gesendet sobald Verbindung besteht.
+          </div>
+        </Card>
+
       </div>
     </div>
   )

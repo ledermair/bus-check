@@ -19,6 +19,7 @@ import {
   UnfallStep5,
   UnfallStep6,
   AdminScreen,
+  InstallScreen,
 } from './screens'
 
 // ─── Wrapper-Komponenten außerhalb von App() definiert ────────────────────
@@ -79,6 +80,7 @@ export default function App() {
 
         {/* Admin */}
         <Route path="/admin" element={<AdminScreen />} />
+        <Route path="/install" element={<InstallScreen />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
