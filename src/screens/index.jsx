@@ -94,17 +94,18 @@ export function HomeScreen() {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <div
-                  onClick={() => {
-                    pendingQueue.forEach(async (item) => {
+                  onClick={async () => {
+                    for (const item of pendingQueue) {
                       try {
+                        const pdfBase64 = sessionStorage.getItem(`qpdf_${item.id}`) || ''
                         const res = await fetch('/api/send-email', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(item),
+                          body: JSON.stringify({ ...item, pdfBase64 }),
                         })
                         if (res.ok) removeFromQueue(item.id)
                       } catch {}
-                    })
+                    }
                   }}
                   style={{
                     flex: 1, padding: '8px 12px', background: 'rgba(26,92,42,0.15)',
@@ -651,9 +652,18 @@ export function KontrolleStep4({ isAbfahrt = true }) {
             colorMap={{ Nein: 'sel-yes', Ja: 'sel-no' }}
           />
           {kontrolle.schaeden === true && (
-            <div className="warn-chip info-chip" style={{ marginTop: 10 }}>
-              <span>⚠️</span>
-              <span>Weiterleitung zum Schadenerfassungsprozess…</span>
+            <div style={{ marginTop: 10 }}>
+              <div className="warn-chip info-chip" style={{ background: 'rgba(204,0,0,0.08)', borderColor: 'rgba(204,0,0,0.25)' }}>
+                <span>⚠️</span>
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--red)', fontSize: 13 }}>
+                    Schaden vermerkt – wird im Bericht festgehalten
+                  </div>
+                  <div style={{ fontSize: 12, marginTop: 3, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    Bitte nach der {isAbfahrt ? 'Abfahrts-' : 'Ankunfts-'}Kontrolle den Schadenserfassung ausfüllen!
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </Card>
@@ -746,6 +756,7 @@ export function KontrolleStep6({ isAbfahrt = true }) {
   const driver = useAppStore(s => s.driver)
   const settings = useAppStore(s => s.settings)
   const kontrolle = useFormStore(s => s.kontrolle)
+  const resetUnfall = useFormStore(s => s.resetUnfall)
   const [state, setState] = useState('generating')
   const [errorDetail, setErrorDetail] = useState('')
 
@@ -809,7 +820,35 @@ export function KontrolleStep6({ isAbfahrt = true }) {
             </div>
             <div className="email-badge">📧 {settings.emailUebergabe}</div>
             {kontrolle.emailKopie && <div className="email-badge">📧 Kopie: {kontrolle.emailKopie}</div>}
-            <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => nav('/')}>← Zurück zur Startseite</button>
+
+            {/* Schaden-Hinweis */}
+            {kontrolle.schaeden === true && (
+              <div style={{
+                background: 'rgba(204,0,0,0.1)', border: '1px solid rgba(204,0,0,0.3)',
+                borderRadius: 10, padding: '12px 16px', marginTop: 12, width: '100%', textAlign: 'left',
+              }}>
+                <div style={{ fontWeight: 700, color: '#FF8080', marginBottom: 4 }}>⚠️ Schaden vermerkt</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Bitte jetzt die Unfall-/Schadensmeldung ausfüllen!
+                </div>
+                <button
+                  className="btn-primary"
+                  style={{ marginTop: 10, background: 'rgba(204,0,0,0.7)' }}
+                  onClick={() => { resetUnfall(); nav('/unfall/1') }}
+                >
+                  Jetzt Schadensmeldung ausfüllen →
+                </button>
+              </div>
+            )}
+
+            <button className="btn-primary" style={{ marginTop: 12 }}
+              onClick={() => nav(isAbfahrt ? '/abfahrt/1' : '/ankunft/1')}>
+              ✏️ Bericht korrigieren / nochmal öffnen
+            </button>
+            <button className="btn-primary" style={{ marginTop: 8, background: 'var(--dark3)', color: 'var(--text)', boxShadow: 'none' }}
+              onClick={() => nav('/')}>
+              ← Zurück zur Startseite
+            </button>
           </>
         )}
         {state === 'error' && (
@@ -1346,7 +1385,12 @@ export function UnfallStep6() {
             <div className="email-badge">📧 {settings.emailSchaden}</div>
             <div className="email-badge">📧 CC: {settings.emailVersicherung}</div>
             {unfall.emailKopie && <div className="email-badge">📧 Kopie: {unfall.emailKopie}</div>}
-            <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => nav('/')}>← Zurück zur Startseite</button>
+            <button className="btn-primary" style={{ marginTop: 12 }} onClick={() => nav('/unfall/1')}>
+              ✏️ Bericht korrigieren / nochmal öffnen
+            </button>
+            <button className="btn-primary" style={{ marginTop: 8, background: 'var(--dark3)', color: 'var(--text)', boxShadow: 'none' }} onClick={() => nav('/')}>
+              ← Zurück zur Startseite
+            </button>
           </>
         )}
         {state === 'error' && (

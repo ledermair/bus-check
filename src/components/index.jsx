@@ -50,40 +50,30 @@ export function ScreenHeader({ title, subtitle, progress, onBack, right }) {
 
 // ─── PhotoSlot ────────────────────────────────────────────────────────────
 export function PhotoSlot({ label, value, onChange, className = '', wide = false }) {
-  const [imgSize, setImgSize] = useState(null)
-
   const handleClick = () => {
-    if (value) { onChange(null); setImgSize(null) }
-    else openCamera((img) => {
-      // Bildgröße auslesen für echtes Seitenverhältnis
-      if (img) {
-        const i = new Image()
-        i.onload = () => setImgSize({ w: i.naturalWidth, h: i.naturalHeight })
-        i.src = img
-      }
-      onChange(img)
-    })
+    if (value) onChange(null)
+    else openCamera(onChange)
   }
-
-  // Seitenverhältnis aus echtem Bild
-  const aspectRatio = imgSize
-    ? `${imgSize.w} / ${imgSize.h}`
-    : wide ? '3/2' : '4/3'
 
   return (
     <div
       className={`photo-slot ${value ? 'done' : ''} ${className}`}
-      style={value ? { aspectRatio, height: 'auto' } : {}}
       onClick={handleClick}
+      style={value ? { aspectRatio: 'auto', height: 'auto', padding: 0 } : {}}
     >
       {value ? (
+        // Wenn Foto vorhanden: img bestimmt die Höhe, kein fixer Container
         <img
           src={value}
           alt={label}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0, borderRadius: 7 }}
-          onLoad={(e) => {
-            const img = e.target
-            if (!imgSize) setImgSize({ w: img.naturalWidth, h: img.naturalHeight })
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 'auto',       // echtes Seitenverhältnis
+            maxHeight: '220px',   // max Höhe damit es nicht riesig wird
+            objectFit: 'contain', // kein crop, volles Bild sichtbar
+            borderRadius: 7,
+            position: 'static',   // kein absolute mehr
           }}
         />
       ) : (
