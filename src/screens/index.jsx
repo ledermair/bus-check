@@ -1744,7 +1744,7 @@ export function InstallScreen() {
                   sub="Tippe auf die drei Striche ☰ unten rechts." />
                 <Step nr="2" text='"Seite hinzufügen" wählen'
                   sub='Dann "Zum Startbildschirm hinzufügen".' />
-                <Step nr="3" text='"Hinzufügen' bestätigen"
+                <Step nr="3" text="Hinzufügen bestätigen"
                   sub="BusCheck erscheint als App-Symbol." />
               </>
             ) : (
