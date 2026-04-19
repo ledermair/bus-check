@@ -49,18 +49,31 @@ export function ScreenHeader({ title, subtitle, progress, onBack, right }) {
 }
 
 // ─── PhotoSlot ────────────────────────────────────────────────────────────
-export function PhotoSlot({ label, value, onChange, className = '', square = false, wide = false }) {
+export function PhotoSlot({ label, value, onChange, className = '', wide = false }) {
+  const [imgSize, setImgSize] = useState(null)
+
   const handleClick = () => {
-    if (value) {
-      onChange(null)
-    } else {
-      openCamera(onChange)
-    }
+    if (value) { onChange(null); setImgSize(null) }
+    else openCamera((img) => {
+      // Bildgröße auslesen für echtes Seitenverhältnis
+      if (img) {
+        const i = new Image()
+        i.onload = () => setImgSize({ w: i.naturalWidth, h: i.naturalHeight })
+        i.src = img
+      }
+      onChange(img)
+    })
   }
+
+  // Seitenverhältnis aus echtem Bild
+  const aspectRatio = imgSize
+    ? `${imgSize.w} / ${imgSize.h}`
+    : wide ? '3/2' : '4/3'
 
   return (
     <div
-      className={`photo-slot ${value ? 'done' : ''} ${square ? 'sq' : ''} ${wide ? 'wide' : ''} ${className}`}
+      className={`photo-slot ${value ? 'done' : ''} ${className}`}
+      style={value ? { aspectRatio, height: 'auto' } : {}}
       onClick={handleClick}
     >
       {value ? (
@@ -68,6 +81,10 @@ export function PhotoSlot({ label, value, onChange, className = '', square = fal
           src={value}
           alt={label}
           style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0, borderRadius: 7 }}
+          onLoad={(e) => {
+            const img = e.target
+            if (!imgSize) setImgSize({ w: img.naturalWidth, h: img.naturalHeight })
+          }}
         />
       ) : (
         <>
@@ -79,7 +96,159 @@ export function PhotoSlot({ label, value, onChange, className = '', square = fal
   )
 }
 
-// ─── ToggleGroup ──────────────────────────────────────────────────────────
+// ─── LicensePhotoSlot – Führerschein mit Scheckkartenrahmen ──────────────
+// Zeigt Suchrahmen im Kamerabild-Format, speichert nur den Kartenbereich
+export function LicensePhotoSlot({ value, onChange, label }) {
+  const [cropping, setCropping] = useState(false)
+  const [rawPhoto, setRawPhoto] = useState(null)
+  const canvasRef = useRef(null)
+  const imgRef = useRef(null)
+  // Scheckkarte: 85.6mm × 53.98mm → ratio 1.586
+  const CARD_RATIO = 85.6 / 54
+
+  const handleCapture = () => {
+    openCamera((img) => {
+      if (!img) return
+      setRawPhoto(img)
+      setCropping(true)
+    })
+  }
+
+  const cropAndSave = () => {
+    const img = imgRef.current
+    const canvas = canvasRef.current
+    if (!img || !canvas) return
+
+    // Ziel: Scheckkartenformat
+    const outW = 680
+    const outH = Math.round(outW / CARD_RATIO)
+    canvas.width = outW
+    canvas.height = outH
+
+    // Bild in natürlichen Maßen
+    const iW = img.naturalWidth
+    const iH = img.naturalHeight
+    const iRatio = iW / iH
+
+    // Crop-Bereich: 80% der Breite, proportional hoch
+    const cropW = iW * 0.82
+    const cropH = cropW / CARD_RATIO
+    const cropX = (iW - cropW) / 2
+    const cropY = (iH - cropH) / 2
+
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
+    const cropped = canvas.toDataURL('image/jpeg', 0.72)
+    onChange(cropped)
+    setCropping(false)
+    setRawPhoto(null)
+  }
+
+  if (cropping && rawPhoto) {
+    return (
+      <div style={{ position: 'relative' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textAlign: 'center' }}>
+          Positioniere den Führerschein im Rahmen
+        </div>
+        <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
+          <img ref={imgRef} src={rawPhoto} alt="Vorschau"
+            style={{ width: '100%', display: 'block' }} />
+          {/* Scheckkarten-Overlay */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              width: '82%',
+              aspectRatio: `${CARD_RATIO}`,
+              border: '2px solid var(--yellow)',
+              borderRadius: 8,
+              boxShadow: '0 0 0 2000px rgba(0,0,0,0.45)',
+              position: 'relative',
+            }}>
+              {/* Ecken */}
+              {[['top','left'],['top','right'],['bottom','left'],['bottom','right']].map(([v,h]) => (
+                <div key={v+h} style={{
+                  position: 'absolute', [v]: -2, [h]: -2,
+                  width: 16, height: 16,
+                  borderTop: v==='top' ? '3px solid var(--yellow)' : 'none',
+                  borderBottom: v==='bottom' ? '3px solid var(--yellow)' : 'none',
+                  borderLeft: h==='left' ? '3px solid var(--yellow)' : 'none',
+                  borderRight: h==='right' ? '3px solid var(--yellow)' : 'none',
+                }} />
+              ))}
+              <div style={{
+                position: 'absolute', bottom: -22, left: 0, right: 0,
+                textAlign: 'center', fontSize: 10, color: 'var(--yellow)', fontWeight: 600,
+              }}>FÜHRERSCHEIN</div>
+            </div>
+          </div>
+        </div>
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <button className="btn-ghost" style={{ flex: 1 }}
+            onClick={() => { setCropping(false); setRawPhoto(null) }}>
+            Abbrechen
+          </button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={cropAndSave}>
+            ✓ Bereich übernehmen
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (value) {
+    return (
+      <div>
+        <div style={{
+          position: 'relative', borderRadius: 10, overflow: 'hidden',
+          aspectRatio: `${CARD_RATIO}`,
+          border: '2px solid rgba(26,92,42,0.4)',
+        }}>
+          <img src={value} alt="Führerschein"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{
+            position: 'absolute', top: 6, right: 6,
+            background: 'rgba(0,0,0,0.6)', borderRadius: 6,
+            padding: '3px 8px', fontSize: 11, color: '#fff', cursor: 'pointer',
+          }} onClick={() => onChange(null)}>
+            ✕ Löschen
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--green-light)', marginTop: 6, textAlign: 'center' }}>
+          ✓ Führerscheinfoto gespeichert
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={handleCapture}
+      style={{
+        border: '2px dashed rgba(245,216,0,0.35)',
+        borderRadius: 10,
+        aspectRatio: `${CARD_RATIO}`,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 8, cursor: 'pointer',
+        background: 'rgba(245,216,0,0.04)',
+      }}
+    >
+      <span style={{ fontSize: 28 }}>🪪</span>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+          {label || 'Führerschein fotografieren'}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+          Scheckkarten-Format · Rahmen ausrichten
+        </div>
+      </div>
+    </div>
+  )
+}
 export function ToggleGroup({ options, value, onChange, colorMap }) {
   return (
     <div className="toggle-group">

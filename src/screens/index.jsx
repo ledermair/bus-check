@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ScreenHeader, PhotoSlot, ToggleGroup, FieldGroup, Card,
+  ScreenHeader, PhotoSlot, LicensePhotoSlot, ToggleGroup, FieldGroup, Card,
   SignaturePad, CauseTagGroup, VehicleSketch, DateTimePicker
 } from '../components'
 import { useAppStore, useFormStore } from '../store'
@@ -395,77 +395,42 @@ export function AbfahrtStep2() {
         </div>
 
         {/* Option A: Letztes Foto übernehmen */}
-        {savedPhoto && (
+        {savedPhoto && !kontrolle.licensePhoto && (
           <div style={{ marginBottom: 14 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
-              textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
-            }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
               Option A · Letztes Foto vom Vormonat übernehmen
             </div>
-            <div
-              onClick={hasSavedSelected ? undefined : handleUseSaved}
-              style={{
-                borderRadius: 10, overflow: 'hidden',
-                border: `2px solid ${hasSavedSelected ? 'var(--green-light)' : 'rgba(255,255,255,0.1)'}`,
-                position: 'relative',
-                cursor: hasSavedSelected ? 'default' : 'pointer',
-              }}
-            >
+            <div onClick={handleUseSaved} style={{
+              borderRadius: 10, overflow: 'hidden',
+              aspectRatio: `${85.6/54}`,
+              border: '2px solid rgba(255,255,255,0.1)',
+              position: 'relative', cursor: 'pointer',
+            }}>
               <img src={savedPhoto} alt="Letztes Führerscheinfoto"
-                style={{ width: '100%', display: 'block', maxHeight: 160, objectFit: 'cover' }} />
-              {hasSavedSelected ? (
-                <div style={{
-                  position: 'absolute', top: 8, right: 8,
-                  background: 'var(--green)', borderRadius: '50%',
-                  width: 28, height: 28, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, color: '#fff', fontWeight: 700,
-                }}>✓</div>
-              ) : (
-                <div style={{
-                  position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <div style={{
-                    background: 'var(--green)', color: '#fff',
-                    padding: '8px 20px', borderRadius: 20,
-                    fontSize: 13, fontWeight: 700,
-                  }}>Foto übernehmen</div>
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div style={{
+                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{ background: 'var(--green)', color: '#fff', padding: '8px 20px', borderRadius: 20, fontSize: 13, fontWeight: 700 }}>
+                  Foto übernehmen
                 </div>
-              )}
-            </div>
-            {hasSavedSelected && (
-              <div style={{ fontSize: 12, color: 'var(--green-light)', marginTop: 6, textAlign: 'center' }}>
-                ✓ Letztes Foto wird verwendet
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Option B: Neues Foto */}
+        {/* Neues Foto aufnehmen */}
         <div>
-          <div style={{
-            fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
-            textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
-          }}>
-            {savedPhoto ? 'Option B · Neues Foto aufnehmen' : 'Führerschein fotografieren'}
-          </div>
-          <PhotoSlot
-            label="Führerschein fotografieren"
-            value={hasNewPhoto ? kontrolle.licensePhoto : null}
-            onChange={handleNewPhoto}
-            wide
-          />
-          {hasNewPhoto && (
-            <div style={{ fontSize: 12, color: 'var(--green-light)', marginTop: 6, textAlign: 'center' }}>
-              ✓ Neues Foto aufgenommen
+          {savedPhoto && (
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
+              {kontrolle.licensePhoto ? 'Neues Foto aufgenommen' : 'Option B · Neues Foto aufnehmen'}
             </div>
           )}
-        </div>
-
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 14, lineHeight: 1.6 }}>
-          Beide Seiten des Führerscheins sollten gut lesbar sein.
+          <LicensePhotoSlot
+            value={kontrolle.licensePhoto && kontrolle.licensePhoto !== savedPhoto ? kontrolle.licensePhoto : (kontrolle.licensePhoto === savedPhoto ? null : kontrolle.licensePhoto)}
+            onChange={handleNewPhoto}
+          />
         </div>
       </div>
       <div className="screen-footer">
