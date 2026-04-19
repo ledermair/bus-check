@@ -42,52 +42,41 @@
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; }
 
-html {
+html, body, #root {
   height: 100%;
+  width: 100%;
   overflow: hidden;
+  margin: 0; padding: 0;
 }
 
 body {
-  margin: 0; padding: 0;
-  width: 100%; height: 100%;
-  overflow: hidden;
   font-family: 'Barlow', sans-serif;
   background: var(--dark);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  font-size: 16px;
-  /* Verhindert iOS Bounce und Android URL-Bar-Probleme */
   overscroll-behavior: none;
 }
 
-#root {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* ─── App Shell ─────────────────────────────────────────
-   Trick: CSS custom property --vh wird per JS gesetzt
-   und berücksichtigt iOS Safari + Android Chrome korrekt
-──────────────────────────────────────────────────────── */
 .app-shell {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw;
   height: 100vh;
-  background: var(--dark);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--dark);
+  position: relative;
 }
 
 .screen-header {
-  position: absolute;
-  top: 0; left: 0; right: 0;
   background: rgba(13,26,15,0.97);
   border-bottom: 1px solid var(--border);
   padding: calc(var(--safe-top) + 12px) 20px 14px;
-  z-index: 20;
+  flex-shrink: 0;
+  z-index: 10;
   backdrop-filter: blur(10px);
 }
 
@@ -169,32 +158,24 @@ body {
 
 /* ─── Scrollable body ─────────────────────── */
 .screen-body {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding-top: var(--header-height, 120px);
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-bottom: 120px;
-  overflow-y: scroll;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
 
 /* ─── Sticky bottom ───────────────────────── */
 .screen-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   padding: 10px 16px;
-  /* iOS safe area + Android navigation bar */
   padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
   background: var(--dark);
   border-top: 1px solid var(--border);
-  z-index: 30;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 /* ─── Buttons ─────────────────────────────── */

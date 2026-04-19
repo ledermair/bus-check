@@ -1,27 +1,11 @@
-import { useRef, useEffect, useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { LOGO_B64, BUS_VIEWS } from '../brand'
 import { openCamera } from '../utils/helpers'
 
 // ─── ScreenHeader ─────────────────────────────────────────────────────────
 export function ScreenHeader({ title, subtitle, progress, onBack, right }) {
-  const ref = useRef(null)
-
-  useEffect(() => {
-    if (!ref.current) return
-    const el = ref.current
-    const measure = () => {
-      const h = el.offsetHeight || 120
-      const shell = el.closest('.app-shell')
-      if (shell) shell.style.setProperty('--header-height', `${h + 8}px`)
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [title, subtitle, progress])
-
   return (
-    <div className="screen-header" ref={ref}>
+    <div className="screen-header">
       <div className="header-row">
         <div className="logo-lockup">
           {onBack
