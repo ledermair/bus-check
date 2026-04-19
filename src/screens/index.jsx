@@ -5,7 +5,7 @@ import {
   SignaturePad, CauseTagGroup, VehicleSketch, DateTimePicker
 } from '../components'
 import { useAppStore, useFormStore } from '../store'
-import { LOGO_B64 } from '../brand'
+import { LOGO_B64, BUS_VIEWS } from '../brand'
 import { openCamera, ocrKilometerstand, getGPS, sendPDF, formatFilename } from '../utils/helpers'
 import { generateKontrollePDF, generateUnfallPDF } from '../utils/pdfGen'
 
@@ -48,7 +48,8 @@ export function HomeScreen() {
 
   return (
     <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100%',
+      position: 'fixed', top: 0, left: 0,
+      width: '100vw',
       height: 'var(--real-vh, 100vh)',
       background: 'var(--dark)', overflow: 'hidden',
     }}>
@@ -1309,7 +1310,7 @@ export function UnfallStep6() {
     let cancelled = false
     const go = async () => {
       try {
-        const pdfDataUri = await generateUnfallPDF(unfall, driver)
+        const pdfDataUri = await generateUnfallPDF(unfall, driver, BUS_VIEWS)
         const filename = formatFilename('Unfall', unfall.bus || 'Bus', new Date())
         const to = [settings.emailSchaden].filter(Boolean)
         const cc = [settings.emailVersicherung].filter(Boolean)

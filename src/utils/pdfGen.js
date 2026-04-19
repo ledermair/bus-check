@@ -1,486 +1,495 @@
 import jsPDF from 'jspdf'
 import { compressForPDF } from './helpers'
 
-// ─── Colors ───────────────────────────────────────────────────────────────
-const GOLD = [200, 165, 90]
-const DARK = [14, 14, 15]
-const GRAY = [50, 50, 55]
-const WHITE = [240, 237, 232]
-const RED = [217, 64, 64]
-const GREEN = [61, 170, 106]
+// ─── Farben (Druckoptimiert: weißer Hintergrund, dunkle Schrift) ──────────
+const BG       = [255, 255, 255]  // Weißer Hintergrund
+const TEXT     = [20,  20,  20]   // Fast schwarz
+const TEXT2    = [80,  80,  80]   // Grau
+const TEXT3    = [140, 140, 140]  // Hellgrau
+const GREEN_D  = [26,  92,  42]   // Ledermair Grün
+const YELLOW_D = [180, 140, 0]    // Gedämpftes Gelb für Druck
+const RED_D    = [180, 40,  40]   // Dunkelrot
+const LINE     = [200, 200, 200]  // Trennlinie
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function addHeader(doc, title, subtitle) {
-  // Background
-  doc.setFillColor(...DARK)
-  doc.rect(0, 0, 210, 35, 'F')
+  // Grüner Header-Balken
+  doc.setFillColor(...GREEN_D)
+  doc.rect(0, 0, 210, 28, 'F')
 
-  // Gold accent bar
-  doc.setFillColor(...GOLD)
-  doc.rect(0, 0, 6, 35, 'F')
+  // Weißer Akzentstreifen links
+  doc.setFillColor(255, 255, 255)
+  doc.rect(0, 0, 5, 28, 'F')
 
-  // Logo text
-  doc.setTextColor(...GOLD)
-  doc.setFontSize(18)
-  doc.setFont('helvetica', 'bold')
-  doc.text('LEDERMAIR', 14, 14)
+  // Roter Unterstrich
+  doc.setFillColor(...RED_D)
+  doc.rect(0, 27, 210, 2, 'F')
 
-  doc.setTextColor(...WHITE)
-  doc.setFontSize(8)
-  doc.setFont('helvetica', 'normal')
-  doc.text('BusCheck – Fahrzeugkontrollsystem', 14, 20)
-
-  // Title
+  // Logo Text weiß
+  doc.setTextColor(255, 255, 255)
   doc.setFontSize(16)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...WHITE)
-  doc.text(title, 14, 30)
+  doc.text('LEDERMAIR', 12, 12)
+
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(200, 230, 200)
+  doc.text('BusCheck – Fahrzeugkontrollsystem', 12, 18)
+
+  // Titel rechts
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(255, 255, 255)
+  doc.text(title, 210 - 14, 12, { align: 'right' })
 
   if (subtitle) {
-    doc.setFontSize(8)
+    doc.setFontSize(7)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...GOLD)
-    doc.text(subtitle, 14, 35.5)
+    doc.setTextColor(200, 230, 200)
+    doc.text(subtitle, 210 - 14, 19, { align: 'right' })
   }
 
-  return 45
+  return 36
 }
 
-function addSectionTitle(doc, y, title, icon = '') {
-  doc.setFillColor(30, 30, 33)
-  doc.roundedRect(10, y, 190, 8, 2, 2, 'F')
-  doc.setDrawColor(...GOLD)
+function addSectionTitle(doc, y, title) {
+  doc.setFillColor(240, 245, 240)
+  doc.rect(10, y, 190, 7, 'F')
+  doc.setDrawColor(...LINE)
   doc.setLineWidth(0.3)
-  doc.line(10, y + 8, 200, y + 8)
+  doc.line(10, y + 7, 200, y + 7)
 
-  doc.setFontSize(9)
+  doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...GOLD)
-  doc.text((icon ? icon + '  ' : '') + title.toUpperCase(), 14, y + 5.5)
-  return y + 13
+  doc.setTextColor(...GREEN_D)
+  doc.text(title.toUpperCase(), 14, y + 5)
+  return y + 11
 }
 
-function addField(doc, y, label, value, highlight = false) {
-  doc.setFontSize(7.5)
+function addField(doc, y, label, value) {
+  doc.setFontSize(7)
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 115, 110)
+  doc.setTextColor(...TEXT3)
   doc.text(label, 14, y)
-
-  doc.setFont('helvetica', highlight ? 'bold' : 'normal')
-  if (highlight) { doc.setTextColor(...GOLD) } else { doc.setTextColor(...WHITE) }
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...TEXT)
   doc.text(String(value || '—'), 14, y + 5)
   return y + 11
 }
 
 function addTwoFields(doc, y, l1, v1, l2, v2) {
-  doc.setFontSize(7.5)
+  doc.setFontSize(7)
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 115, 110)
+  doc.setTextColor(...TEXT3)
   doc.text(l1, 14, y)
   doc.text(l2, 110, y)
-
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(...WHITE)
+  doc.setTextColor(...TEXT)
   doc.text(String(v1 || '—'), 14, y + 5)
   doc.text(String(v2 || '—'), 110, y + 5)
   return y + 11
 }
 
 function addDivider(doc, y) {
-  doc.setDrawColor(40, 40, 44)
+  doc.setDrawColor(...LINE)
   doc.setLineWidth(0.3)
   doc.line(10, y, 200, y)
-  return y + 4
+  return y + 5
 }
 
-function addPhoto(doc, y, imgData, label, width = 85, height = 55) {
-  if (!imgData) return y
+function addPhotoWithAspect(doc, x, y, imgData, label, maxW, maxH) {
+  // Seitenverhältnis beibehalten
+  if (!imgData) return { w: maxW, h: maxH }
   try {
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(120, 115, 110)
-    doc.text(label, 14, y + 3)
+    const img = new Image()
+    img.src = imgData
+    const ratio = img.naturalWidth > 0 ? img.naturalWidth / img.naturalHeight : 4/3
+    let w = maxW
+    let h = w / ratio
+    if (h > maxH) { h = maxH; w = h * ratio }
 
-    doc.setFillColor(30, 30, 33)
-    doc.roundedRect(14, y + 5, width, height, 2, 2, 'F')
-    doc.addImage(imgData, 'JPEG', 14, y + 5, width, height)
+    doc.setFillColor(245, 245, 245)
+    doc.roundedRect(x, y, w, h, 1, 1, 'F')
+    doc.addImage(imgData, 'JPEG', x, y, w, h)
 
-    return y + height + 10
+    if (label) {
+      doc.setFontSize(6)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...TEXT3)
+      doc.text(label, x, y + h + 3)
+    }
+    return { w, h }
   } catch (e) {
     console.warn('Photo embed failed:', e)
-    return y
+    return { w: maxW, h: maxH }
   }
 }
 
-function addPhotoRow(doc, y, photos, labels) {
-  // Up to 3 photos per row, each ~58mm wide
-  const w = 56, h = 38, gap = 4, startX = 14
+function addPhotoRow(doc, y, photos, labels, maxH = 45) {
+  const gap = 4, startX = 14
+  const count = photos.filter(Boolean).length
+  if (count === 0) return y
+  const maxW = (190 - gap * (count - 1)) / Math.min(count, 3)
+
+  let x = startX
+  let actualH = 0
   photos.forEach((img, i) => {
     if (!img) return
-    const x = startX + i * (w + gap)
-    try {
-      doc.setFillColor(30, 30, 33)
-      doc.roundedRect(x, y, w, h, 2, 2, 'F')
-      doc.addImage(img, 'JPEG', x, y, w, h)
-      doc.setFontSize(6)
-      doc.setTextColor(120, 115, 110)
-      doc.text(labels[i] || '', x, y + h + 3)
-    } catch (e) {
-      console.warn('Photo embed failed:', e)
-    }
+    const { h } = addPhotoWithAspect(doc, x, y, img, labels[i] || '', maxW, maxH)
+    actualH = Math.max(actualH, h)
+    x += maxW + gap
+    if (x > 170 && i < photos.length - 1) { x = startX; y += actualH + 8; actualH = 0 }
   })
-  return y + h + 8
+  return y + actualH + 8
 }
 
 function addSignature(doc, y, sigData, label) {
   y = checkPageBreak(doc, y, 45)
-
-  // Label
-  doc.setFontSize(7.5)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 115, 110)
-  doc.text(label, 14, y)
-
-  // Weißes Unterschriftsfeld
-  doc.setFillColor(255, 255, 255)
-  doc.roundedRect(14, y + 3, 120, 30, 2, 2, 'F')
-
-  // Unterschrift einfügen wenn vorhanden
-  if (sigData) {
-    try {
-      doc.addImage(sigData, 'PNG', 16, y + 4, 116, 28)
-    } catch (e) {
-      // Fallback: Hinweis
-      doc.setFontSize(8)
-      doc.setTextColor(150, 150, 150)
-      doc.text('Unterschrift digital erfasst', 20, y + 20)
-    }
-  } else {
-    // Leeres Feld mit Hinweis
-    doc.setFontSize(7)
-    doc.setTextColor(180, 180, 180)
-    doc.text('Unterschrift', 74, y + 19, { align: 'center' })
-  }
-
-  // Unterschriftslinie
-  doc.setDrawColor(180, 180, 180)
-  doc.setLineWidth(0.4)
-  doc.line(14, y + 29, 134, y + 29)
-
-  // Datum + Name unter der Linie
-  const heute = new Date().toLocaleDateString('de-AT')
   doc.setFontSize(7)
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 115, 110)
-  doc.text(`Datum: ${heute}`, 14, y + 34)
-  doc.text(label, 134, y + 34, { align: 'right' })
+  doc.setTextColor(...TEXT3)
+  doc.text(label, 14, y)
 
-  // Grüner Haken wenn unterschrieben
+  doc.setFillColor(250, 250, 250)
+  doc.setDrawColor(...LINE)
+  doc.setLineWidth(0.3)
+  doc.roundedRect(14, y + 3, 120, 28, 1, 1, 'FD')
+
   if (sigData) {
-    doc.setFillColor(26, 92, 42)
-    doc.circle(140, y + 16, 4, 'F')
+    try { doc.addImage(sigData, 'PNG', 16, y + 4, 116, 26) } catch {}
+    doc.setFillColor(...GREEN_D)
+    doc.circle(140, y + 17, 4, 'F')
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(7)
-    doc.text('✓', 140, y + 18, { align: 'center' })
+    doc.text('✓', 140, y + 19, { align: 'center' })
+  } else {
+    doc.setFontSize(7)
+    doc.setTextColor(...TEXT3)
+    doc.text('Unterschrift', 74, y + 18, { align: 'center' })
   }
+
+  doc.setDrawColor(...LINE)
+  doc.line(14, y + 28, 134, y + 28)
+
+  const heute = new Date().toLocaleDateString('de-AT')
+  doc.setFontSize(6.5)
+  doc.setTextColor(...TEXT3)
+  doc.text(`Datum: ${heute}`, 14, y + 33)
+  doc.text(label, 134, y + 33, { align: 'right' })
 
   return y + 40
 }
 
 function checkPageBreak(doc, y, needed = 40) {
-  if (y + needed > 285) {
+  if (y + needed > 280) {
     doc.addPage()
-    doc.setFillColor(...DARK)
+    doc.setFillColor(...BG)
     doc.rect(0, 0, 210, 297, 'F')
     return 15
   }
   return y
 }
 
+// ─── Skizze mit Markierungen als Bild rendern ─────────────────────────────
+async function renderSketchToImage(damagePoints, busViews) {
+  if (!damagePoints || damagePoints.length === 0) return null
+
+  // Alle betroffenen Views
+  const viewsWithPoints = [...new Set(damagePoints.map(p => p.view))]
+  const results = {}
+
+  for (const view of viewsWithPoints) {
+    const viewKey = view.toLowerCase()
+    const bgImage = busViews[viewKey]
+    if (!bgImage) continue
+
+    const pts = damagePoints.filter(p => p.view === view)
+
+    // Canvas erstellen
+    const canvas = document.createElement('canvas')
+    canvas.width = 800
+    canvas.height = 400
+    const ctx = canvas.getContext('2d')
+
+    // Hintergrund weiß
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, 800, 400)
+
+    // Bus-Bild laden
+    await new Promise(resolve => {
+      const img = new Image()
+      img.onload = () => {
+        // Bild proportional einpassen
+        const ratio = img.width / img.height
+        let dw = 800, dh = 800 / ratio
+        if (dh > 400) { dh = 400; dw = 400 * ratio }
+        const dx = (800 - dw) / 2
+        const dy = (400 - dh) / 2
+        ctx.drawImage(img, dx, dy, dw, dh)
+        resolve()
+      }
+      img.onerror = resolve
+      img.src = bgImage
+    })
+
+    // Markierungspunkte zeichnen
+    pts.forEach(p => {
+      const x = (p.x / 100) * 800
+      const y = (p.y / 100) * 400
+
+      // Roter Kreis
+      ctx.beginPath()
+      ctx.arc(x, y, 16, 0, Math.PI * 2)
+      ctx.fillStyle = '#CC0000'
+      ctx.fill()
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // Nummer
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 14px Arial'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(String(p.id), x, y)
+    })
+
+    // View-Label
+    ctx.fillStyle = 'rgba(26,92,42,0.85)'
+    ctx.fillRect(0, 0, 120, 28)
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 13px Arial'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillText(view.toUpperCase(), 10, 7)
+
+    results[view] = canvas.toDataURL('image/jpeg', 0.85)
+  }
+
+  return results
+}
+
 // ─── KONTROLLE PDF ────────────────────────────────────────────────────────
 export async function generateKontrollePDF(data, driver) {
-  // ── Alle Bilder vor PDF-Erstellung komprimieren (spart 60-80% Größe)
-  const [
-    licensePhotoC,
-    kmPhotoC,
-    oelPhotoC,
-    tankPhotoC,
-  ] = await Promise.all([
+  // Bilder komprimieren
+  const [licensePhotoC, kmPhotoC, oelPhotoC, tankPhotoC] = await Promise.all([
     compressForPDF(data.licensePhoto),
     compressForPDF(data.kmPhoto),
     compressForPDF(data.oelPhoto),
     compressForPDF(data.tankPhoto),
   ])
-
-  // Bus-Fotos komprimieren
   const busPhotosC = {}
   for (const [pos, img] of Object.entries(data.busPhotos || {})) {
     if (img) busPhotosC[pos] = await compressForPDF(img)
   }
-
-  // Komprimierte Daten verwenden
-  const d = {
-    ...data,
-    licensePhoto: licensePhotoC,
-    kmPhoto: kmPhotoC,
-    oelPhoto: oelPhotoC,
-    tankPhoto: tankPhotoC,
-    busPhotos: busPhotosC,
-  }
+  const d = { ...data, licensePhoto: licensePhotoC, kmPhoto: kmPhotoC, oelPhoto: oelPhotoC, tankPhoto: tankPhotoC, busPhotos: busPhotosC }
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
-
-  // Dark background
-  doc.setFillColor(...DARK)
+  doc.setFillColor(...BG)
   doc.rect(0, 0, 210, 297, 'F')
 
   const isAbfahrt = d.type === 'abfahrt'
-  let y = addHeader(
-    doc,
-    isAbfahrt ? 'Abfahrtskontrolle' : 'Ankunftskontrolle',
-    `${d.bus} · ${d.datum} · ${d.uhrzeit}`
-  )
+  let y = addHeader(doc, isAbfahrt ? 'Abfahrtskontrolle' : 'Ankunftskontrolle', `${d.bus} · ${d.datum} · ${d.uhrzeit}`)
 
-  // ── Stammdaten
-  y = addSectionTitle(doc, y, 'Stammdaten', '📋')
+  y = addSectionTitle(doc, y, 'Stammdaten')
   y = addTwoFields(doc, y, 'Fahrzeug', d.bus, 'Datum', d.datum)
   y = addTwoFields(doc, y, 'Fahrer', `${driver.nr} ${driver.name}`, 'Uhrzeit', d.uhrzeit)
-  y = addTwoFields(
-    doc,
-    y,
-    'Fahrauftrag / Ziel',
-    d.fahrauftrag || d.ziel || '—',
-    'Typ',
-    isAbfahrt ? 'Abfahrtskontrolle' : 'Ankunftskontrolle'
-  )
+  y = addTwoFields(doc, y, 'Fahrauftrag / Ziel', d.fahrauftrag || d.ziel || '—', 'Typ', isAbfahrt ? 'Abfahrtskontrolle' : 'Ankunftskontrolle')
   y = addDivider(doc, y)
 
-  // ── Zustandsdaten
-  y = addSectionTitle(doc, y, 'Fahrzeugzustand', '🔍')
-
-  const oelColor =
-    d.oelStatus === 'OK' ? [...GREEN] : d.oelStatus ? [...RED] : [...WHITE]
-  const tankMap = { voll: '████████ Voll', '3/4': '██████░░ 3/4', '1/2': '████░░░░ 1/2', '1/4': '██░░░░░░ 1/4', leer: '░░░░░░░░ Leer' }
-
+  y = addSectionTitle(doc, y, 'Fahrzeugzustand')
+  const tankMap = { voll: 'Voll', '3/4': '3/4', '1/2': '1/2', '1/4': '1/4', leer: 'Leer' }
   y = addTwoFields(doc, y, 'Kilometerstand', d.kmValue ? `${parseInt(d.kmValue).toLocaleString('de-AT')} km` : '—', 'Ölstand', d.oelStatus || '—')
-  y = addTwoFields(doc, y, 'Tankstand', tankMap[d.tankStatus] || d.tankStatus || '—', 'Schäden', d.schaeden ? 'JA – Schadenerfassung erfolgt' : 'Nein')
+  y = addTwoFields(doc, y, 'Tankstand', tankMap[d.tankStatus] || d.tankStatus || '—', 'Schäden', d.schaeden ? 'JA' : 'Nein')
   y = addDivider(doc, y)
 
-  // ── Führerscheinfoto (Abfahrt only)
   if (isAbfahrt && d.licensePhoto) {
     y = checkPageBreak(doc, y, 70)
-    y = addSectionTitle(doc, y, 'Führerscheinfoto', '🪪')
-    y = addPhoto(doc, y, d.licensePhoto, 'Führerschein des Fahrers', 120, 75)
+    y = addSectionTitle(doc, y, 'Führerscheinfoto')
+    const { h } = addPhotoWithAspect(doc, 14, y, d.licensePhoto, 'Führerschein', 120, 70)
+    y += h + 10
     y = addDivider(doc, y)
   }
 
-  // ── Bus-Fotos (8 Positionen)
-  const positions = [
-    'Vorne Mitte', 'Fahrerseite schräg vorne', 'Fahrerseite',
-    'Fahrerseite schräg hinten', 'Hinten', 'Beifahrerseite schräg hinten',
-    'Beifahrerseite', 'Beifahrerseite schräg vorne'
-  ]
-
-  const photoChunks = []
+  const positions = ['Vorne Mitte','Fahrerseite schräg vorne','Fahrerseite','Fahrerseite schräg hinten','Hinten','Beifahrerseite schräg hinten','Beifahrerseite','Beifahrerseite schräg vorne']
+  y = checkPageBreak(doc, y, 60)
+  y = addSectionTitle(doc, y, 'Rundum-Fotos (8 Positionen)')
   for (let i = 0; i < positions.length; i += 3) {
-    photoChunks.push(positions.slice(i, i + 3))
-  }
-
-  y = checkPageBreak(doc, y, 60)
-  y = addSectionTitle(doc, y, 'Rundum-Fotos Fahrzeug (8 Positionen)', '📸')
-
-  for (const chunk of photoChunks) {
-    y = checkPageBreak(doc, y, 50)
-    const imgs = chunk.map((pos) => d.busPhotos[pos] || null)
-    y = addPhotoRow(doc, y, imgs, chunk)
+    y = checkPageBreak(doc, y, 55)
+    const chunk = positions.slice(i, i + 3)
+    y = addPhotoRow(doc, y, chunk.map(p => d.busPhotos[p] || null), chunk, 42)
   }
   y = addDivider(doc, y)
 
-  // ── Zustandsfotos
   y = checkPageBreak(doc, y, 60)
-  y = addSectionTitle(doc, y, 'Zustandsfotos', '📷')
-  const statePhotos = [d.kmPhoto, d.oelPhoto, d.tankPhoto].filter(Boolean)
-  const stateLabels = ['Kilometerstand', 'Ölstand', 'Tankstand']
-  if (statePhotos.length > 0) {
-    y = addPhotoRow(doc, y, [d.kmPhoto, d.oelPhoto, d.tankPhoto], stateLabels)
-  }
+  y = addSectionTitle(doc, y, 'Zustandsfotos')
+  y = addPhotoRow(doc, y, [d.kmPhoto, d.oelPhoto, d.tankPhoto], ['Kilometerstand', 'Ölstand', 'Tankstand'], 42)
   y = addDivider(doc, y)
 
-  // ── Unterschrift
-  y = checkPageBreak(doc, y, 40)
-  y = addSectionTitle(doc, y, 'Digitale Unterschrift', '✍️')
+  y = checkPageBreak(doc, y, 50)
+  y = addSectionTitle(doc, y, 'Unterschrift')
   y = addSignature(doc, y, d.signature, `${driver.nr} ${driver.name}`)
 
-  // ── Footer
-  doc.setFontSize(6.5)
-  doc.setTextColor(60, 60, 65)
-  doc.text(
-    `Erstellt am ${new Date().toLocaleString('de-AT')} · BusCheck Ledermair · Dieses Dokument ist automatisch erzeugt.`,
-    105,
-    292,
-    { align: 'center' }
-  )
+  doc.setFontSize(6)
+  doc.setTextColor(...TEXT3)
+  doc.text(`Erstellt am ${new Date().toLocaleString('de-AT')} · BusCheck Ledermair`, 105, 292, { align: 'center' })
 
   return doc.output('datauristring')
 }
 
 // ─── UNFALLBERICHT PDF ────────────────────────────────────────────────────
-export async function generateUnfallPDF(data, driver) {
-  // ── Alle Bilder komprimieren
-  const polizeiFotoC = await compressForPDF(data.polizeiFoto)
+export async function generateUnfallPDF(data, driver, busViews) {
+  // Skizze mit Markierungen rendern
+  let sketchImages = null
+  if (data.damagePoints && data.damagePoints.length > 0 && busViews) {
+    try { sketchImages = await renderSketchToImage(data.damagePoints, busViews) } catch(e) { console.warn('Sketch render failed:', e) }
+  }
 
+  // Fotos komprimieren
+  const polizeiFotoC = await compressForPDF(data.polizeiFoto)
   const damagePhotosC = {}
   for (const [id, photos] of Object.entries(data.damagePhotos || {})) {
-    if (photos?.length) {
-      damagePhotosC[id] = await Promise.all(photos.map(p => compressForPDF(p)))
-    }
+    if (photos?.length) damagePhotosC[id] = await Promise.all(photos.map(p => compressForPDF(p)))
   }
   const extraPhotosC = await Promise.all((data.extraPhotos || []).map(p => compressForPDF(p)))
 
-  const d = {
-    ...data,
-    polizeiFoto: polizeiFotoC,
-    damagePhotos: damagePhotosC,
-    extraPhotos: extraPhotosC,
-  }
+  const d = { ...data, polizeiFoto: polizeiFotoC, damagePhotos: damagePhotosC, extraPhotos: extraPhotosC }
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
-
-  doc.setFillColor(...DARK)
+  doc.setFillColor(...BG)
   doc.rect(0, 0, 210, 297, 'F')
 
-  let y = addHeader(doc, 'Unfall-/Schadensmeldung', `${d.bus || d.fahrer} · ${d.datum} · ${d.uhrzeit}`)
+  let y = addHeader(doc, 'Unfall-/Schadensmeldung', `${d.bus} · ${d.datum} · ${d.uhrzeit}`)
 
   doc.setFontSize(7)
-  doc.setTextColor(...RED)
-  doc.text('⚠  UNFALLBERICHT – basierend auf dem Europäischen Unfall-/Schadensmeldung', 14, 41)
-  y = 50
+  doc.setTextColor(...RED_D)
+  doc.text('Basierend auf dem Europäischen Unfallbericht', 14, y)
+  y += 8
 
-  // ── Grunddaten
-  y = addSectionTitle(doc, y, 'Ort & Zeit', '📍')
+  // Ort & Zeit
+  y = addSectionTitle(doc, y, 'Ort & Zeit')
   y = addTwoFields(doc, y, 'Datum', d.datum, 'Uhrzeit', d.uhrzeit)
-  y = addTwoFields(doc, y, 'Unfallort', d.ort, 'GPS-Koordinaten', d.gps || '—')
+  y = addTwoFields(doc, y, 'Unfallort / Schadensort', d.ort, 'GPS', d.gps || '—')
   y = addDivider(doc, y)
 
-  // ── Unser Fahrzeug
-  y = addSectionTitle(doc, y, 'Fahrzeug 1 – Ledermair', '🚌')
-  y = addTwoFields(doc, y, 'Fahrzeug / Kennzeichen', d.bus, 'Fahrer', `${driver.nr} ${driver.name}`)
+  // Unser Fahrzeug
+  y = addSectionTitle(doc, y, 'Fahrzeug 1 – Ledermair')
+  y = addTwoFields(doc, y, 'Fahrzeug', d.bus, 'Fahrer', `${driver.nr} ${driver.name}`)
   y = addTwoFields(doc, y, 'Versicherung', d.unserVersicherung || '—', 'Polizeinummer', d.unserPolizeinummer || '—')
   y = addDivider(doc, y)
 
-  // ── Gegner (nur wenn vorhanden)
+  // Gegner
   if (d.hatGegner) {
-    y = addSectionTitle(doc, y, 'Fahrzeug 2 – Unfallgegner', '🚗')
-    y = addTwoFields(doc, y, 'Kennzeichen', d.gegnerKennzeichen || '—', 'Fahrer / Name', d.gegnerFahrer || '—')
+    y = addSectionTitle(doc, y, 'Fahrzeug 2 – Unfallgegner')
+    y = addTwoFields(doc, y, 'Kennzeichen', d.gegnerKennzeichen || '—', 'Fahrer', d.gegnerFahrer || '—')
     if (d.gegnerAdresse) y = addField(doc, y, 'Adresse', d.gegnerAdresse)
     y = addTwoFields(doc, y, 'Telefon', d.gegnerTelefon || '—', 'E-Mail', d.gegnerEmail || '—')
     y = addTwoFields(doc, y, 'Versicherung', d.gegnerVersicherung || '—', 'Police-Nr.', d.gegnerVersicherungsNr || '—')
     y = addDivider(doc, y)
   } else {
-    y = addSectionTitle(doc, y, 'Unfallgegner', '🚗')
+    y = addSectionTitle(doc, y, 'Unfallgegner')
     y = addField(doc, y, 'Unfallgegner', 'Kein Unfallgegner / Eigenunfall')
     y = addDivider(doc, y)
   }
-  if (d.zeugen) {
-    y = addField(doc, y, 'Zeugen', d.zeugen)
-  }
 
-  // ── Polizei
-  y = checkPageBreak(doc, y, 40)
-  y = addSectionTitle(doc, y, 'Polizei', '🚔')
+  if (d.zeugen) { y = addField(doc, y, 'Zeugen', d.zeugen); y = addDivider(doc, y) }
+
+  // Polizei
+  y = checkPageBreak(doc, y, 35)
+  y = addSectionTitle(doc, y, 'Polizei')
   if (d.polizeiGerufen) {
-    y = addTwoFields(doc, y, 'Polizei verständigt', 'JA', 'Dienststelle', d.polizeiDienststelle)
-    y = addTwoFields(doc, y, 'Aktenzeichen', d.polizeiAktenzeichen, 'Ansprechpartner', d.polizeiAnsprechpartner)
+    y = addTwoFields(doc, y, 'Polizei gerufen', 'JA', 'Dienststelle', d.polizeiDienststelle || '—')
+    y = addTwoFields(doc, y, 'Aktenzeichen', d.polizeiAktenzeichen || '—', 'Ansprechpartner', d.polizeiAnsprechpartner || '—')
   } else {
-    y = addField(doc, y, 'Polizei verständigt', 'Nein')
+    y = addField(doc, y, 'Polizei gerufen', 'Nein')
   }
   y = addDivider(doc, y)
 
-  // ── Unfallhergang / Schadenshergang
-  y = checkPageBreak(doc, y, 50)
-  y = addSectionTitle(doc, y, 'Unfallhergang / Schadenshergang', '📝')
-  if (d.causes && d.causes.length > 0) {
-    y = addField(doc, y, 'Situationsauswahl', d.causes.join(', '))
-  }
+  // Hergang
+  y = checkPageBreak(doc, y, 40)
+  y = addSectionTitle(doc, y, 'Unfallhergang / Schadenshergang')
+  if (d.causes && d.causes.length > 0) y = addField(doc, y, 'Situationen', d.causes.join(', '))
   if (d.hergang) {
-    doc.setFontSize(7.5)
+    doc.setFontSize(7)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(120, 115, 110)
+    doc.setTextColor(...TEXT3)
     doc.text('Beschreibung:', 14, y)
-    y += 5
+    y += 4
     const lines = doc.splitTextToSize(d.hergang, 182)
-    doc.setTextColor(...WHITE)
-    doc.text(lines, 14, y)
-    y += lines.length * 4.5 + 4
+    doc.setTextColor(...TEXT)
+    lines.forEach(line => {
+      y = checkPageBreak(doc, y, 6)
+      doc.text(line, 14, y)
+      y += 4.5
+    })
+    y += 2
   }
   y = addDivider(doc, y)
 
-  // ── Fahrzeugskizze
+  // Skizze mit Markierungen
   y = checkPageBreak(doc, y, 60)
-  y = addSectionTitle(doc, y, 'Fahrzeugskizze mit Schadenmarkierungen', '🗺️')
-
-  if (d.sketchImage) {
-    y = addPhoto(doc, y, d.sketchImage, 'Schadenmarkierung auf Fahrzeugskizze', 180, 80)
+  y = addSectionTitle(doc, y, 'Fahrzeugskizze mit Schadenmarkierungen')
+  if (sketchImages && Object.keys(sketchImages).length > 0) {
+    for (const [view, imgData] of Object.entries(sketchImages)) {
+      y = checkPageBreak(doc, y, 65)
+      const { h } = addPhotoWithAspect(doc, 14, y, imgData, view, 182, 80)
+      y += h + 6
+    }
+  } else if (d.damagePoints && d.damagePoints.length > 0) {
+    doc.setFontSize(7.5)
+    doc.setTextColor(...TEXT)
+    d.damagePoints.forEach(p => {
+      doc.text(`• Punkt ${p.id}: ${p.view} (${Math.round(p.x)}% / ${Math.round(p.y)}%)`, 14, y)
+      y += 5
+    })
   } else {
     doc.setFontSize(8)
-    doc.setTextColor(80, 80, 85)
-    doc.text('Keine Skizze erfasst.', 14, y)
+    doc.setTextColor(...TEXT3)
+    doc.text('Keine Schadenmarkierungen gesetzt.', 14, y)
     y += 8
   }
   y = addDivider(doc, y)
 
-  // ── Schadensfotos
-  if (d.damagePhotos && Object.keys(d.damagePhotos).length > 0) {
-    y = checkPageBreak(doc, y, 60)
-    y = addSectionTitle(doc, y, 'Schadensfotos', '📷')
-    for (const [pointId, photos] of Object.entries(d.damagePhotos)) {
-      if (!photos || photos.length === 0) continue
+  // Schadensfotos
+  if (Object.keys(d.damagePhotos || {}).length > 0 || (d.extraPhotos || []).length > 0) {
+    y = checkPageBreak(doc, y, 50)
+    y = addSectionTitle(doc, y, 'Schadensfotos')
+    for (const [pointId, photos] of Object.entries(d.damagePhotos || {})) {
+      if (!photos?.length) continue
+      y = checkPageBreak(doc, y, 10)
       doc.setFontSize(7.5)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...RED)
+      doc.setTextColor(...RED_D)
       doc.text(`Schadenspunkt ${pointId}`, 14, y)
       y += 5
       for (let i = 0; i < photos.length; i += 3) {
-        y = checkPageBreak(doc, y, 45)
-        const chunk = photos.slice(i, i + 3)
-        const labels = chunk.map((_, idx) => `Foto ${i + idx + 1}`)
-        y = addPhotoRow(doc, y, chunk, labels)
+        y = checkPageBreak(doc, y, 50)
+        y = addPhotoRow(doc, y, photos.slice(i, i + 3), photos.slice(i, i + 3).map((_, j) => `Foto ${i + j + 1}`), 42)
       }
     }
-    if (d.extraPhotos && d.extraPhotos.length > 0) {
+    if (d.extraPhotos?.length) {
+      y = checkPageBreak(doc, y, 10)
       doc.setFontSize(7.5)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(120, 115, 110)
-      doc.text('Weitere Übersichtsfotos:', 14, y)
+      doc.setTextColor(...TEXT2)
+      doc.text('Weitere Fotos', 14, y)
       y += 5
       for (let i = 0; i < d.extraPhotos.length; i += 3) {
-        y = checkPageBreak(doc, y, 45)
-        const chunk = d.extraPhotos.slice(i, i + 3)
-        y = addPhotoRow(doc, y, chunk, chunk.map((_, idx) => `Foto ${i + idx + 1}`))
+        y = checkPageBreak(doc, y, 50)
+        y = addPhotoRow(doc, y, d.extraPhotos.slice(i, i + 3), d.extraPhotos.slice(i, i+3).map((_,j)=>`Foto ${i+j+1}`), 42)
       }
     }
     y = addDivider(doc, y)
   }
 
-  // ── Unterschriften – immer anzeigen
-  y = checkPageBreak(doc, y, 100)
-  y = addSectionTitle(doc, y, 'Unterschriften', '✍️')
-
-  // Fahrer-Unterschrift immer (mit oder ohne Inhalt)
+  // Unterschriften
+  y = checkPageBreak(doc, y, 90)
+  y = addSectionTitle(doc, y, 'Unterschriften')
   y = addSignature(doc, y, d.signature1 || null, `Fahrer: ${driver.nr} ${driver.name}`)
-
-  // Unfallgegner-Unterschrift immer als Feld anzeigen
   y = addSignature(doc, y, d.signature2 || null, 'Unfallgegner / zweite beteiligte Person')
 
-  // Footer
-  doc.setFontSize(6.5)
-  doc.setTextColor(60, 60, 65)
-  doc.text(
-    `Erstellt am ${new Date().toLocaleString('de-AT')} · BusCheck Ledermair · Unfall-/Schadensmeldung gemäß Europäischem Unfall-/Schadensmeldung`,
-    105,
-    292,
-    { align: 'center' }
-  )
+  doc.setFontSize(6)
+  doc.setTextColor(...TEXT3)
+  doc.text(`Erstellt am ${new Date().toLocaleString('de-AT')} · BusCheck Ledermair · Unfall-/Schadensmeldung`, 105, 292, { align: 'center' })
 
   return doc.output('datauristring')
 }
