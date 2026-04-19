@@ -530,13 +530,13 @@ export function KontrolleStep4({ isAbfahrt = true }) {
     }
   }, [setKontrolle])
 
+  const [schadenPopup, setSchadenPopup] = useState(false)
+
   const handleSchaeden = useCallback((val) => {
     const jaSelected = val === 'Ja'
     setKontrolle({ schaeden: jaSelected })
-    if (jaSelected) {
-      setTimeout(() => nav('/unfall/1'), 300)
-    }
-  }, [setKontrolle, nav])
+    if (jaSelected) setSchadenPopup(true)
+  }, [setKontrolle])
 
   const isValid = !!(
     kontrolle.kmPhoto && kontrolle.kmValue &&
@@ -652,21 +652,59 @@ export function KontrolleStep4({ isAbfahrt = true }) {
             colorMap={{ Nein: 'sel-yes', Ja: 'sel-no' }}
           />
           {kontrolle.schaeden === true && (
-            <div style={{ marginTop: 10 }}>
-              <div className="warn-chip info-chip" style={{ background: 'rgba(204,0,0,0.08)', borderColor: 'rgba(204,0,0,0.25)' }}>
-                <span>⚠️</span>
-                <div>
-                  <div style={{ fontWeight: 700, color: 'var(--red)', fontSize: 13 }}>
-                    Schaden vermerkt – wird im Bericht festgehalten
-                  </div>
-                  <div style={{ fontSize: 12, marginTop: 3, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                    Bitte nach der {isAbfahrt ? 'Abfahrts-' : 'Ankunfts-'}Kontrolle den Schadenserfassung ausfüllen!
-                  </div>
+            <div className="warn-chip info-chip" style={{ background: 'rgba(204,0,0,0.08)', borderColor: 'rgba(204,0,0,0.25)', marginTop: 10 }}>
+              <span>⚠️</span>
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--red)', fontSize: 13 }}>Schaden vermerkt</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                  Bitte nach der Kontrolle Schadensmeldung ausfüllen!
                 </div>
               </div>
             </div>
           )}
         </Card>
+
+        {/* Popup – erscheint einmalig wenn Schaden = Ja */}
+        {schadenPopup && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 999,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }} onClick={() => setSchadenPopup(false)}>
+            <div style={{
+              background: '#1A1A1B', borderRadius: 16,
+              border: '2px solid rgba(204,0,0,0.5)',
+              padding: '28px 24px', maxWidth: 340, width: '100%',
+              boxShadow: '0 0 40px rgba(204,0,0,0.3)',
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: 36, textAlign: 'center', marginBottom: 12 }}>⚠️</div>
+              <div style={{
+                fontSize: 18, fontWeight: 800, color: '#FF6060',
+                textAlign: 'center', marginBottom: 10,
+                fontFamily: 'Barlow Condensed, sans-serif',
+              }}>
+                Schaden wurde vermerkt!
+              </div>
+              <div style={{
+                fontSize: 14, color: 'var(--text-muted)', textAlign: 'center',
+                lineHeight: 1.6, marginBottom: 20,
+              }}>
+                Bitte nach der Abschluss der {isAbfahrt ? 'Abfahrts-' : 'Ankunfts-'}kontrolle
+                die <strong style={{ color: 'var(--text)' }}>Unfall-/Schadensmeldung</strong> ausfüllen.
+                <br /><br />
+                Du kannst die Kontrolle jetzt normal fortsetzen.
+              </div>
+              <button
+                className="btn-primary"
+                onClick={() => setSchadenPopup(false)}
+                style={{ marginBottom: 0 }}
+              >
+                ✓ Verstanden – Kontrolle fortsetzen
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="screen-footer">
         <button className="btn-primary" disabled={!isValid}
