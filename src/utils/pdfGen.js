@@ -96,13 +96,23 @@ function addDivider(doc, y) {
   return y + 5
 }
 
-function addPhotoWithAspect(doc, x, y, imgData, label, maxW, maxH) {
-  // Seitenverhältnis beibehalten
+// ─── Bild-Dimensionen asynchron ermitteln ────────────────────────────────
+function getImageDimensions(src) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
+    img.onerror = () => resolve({ w: 4, h: 3 }) // Fallback 4:3
+    img.src = src
+  })
+}
+
+async function addPhotoWithAspect(doc, x, y, imgData, label, maxW, maxH) {
   if (!imgData) return { w: maxW, h: maxH }
   try {
-    const img = new Image()
-    img.src = imgData
-    const ratio = img.naturalWidth > 0 ? img.naturalWidth / img.naturalHeight : 4/3
+    // Echte Bildgröße asynchron laden
+    const { w: natW, h: natH } = await getImageDimensions(imgData)
+    const ratio = natW > 0 && natH > 0 ? natW / natH : 4 / 3
+
     let w = maxW
     let h = w / ratio
     if (h > maxH) { h = maxH; w = h * ratio }
@@ -124,21 +134,23 @@ function addPhotoWithAspect(doc, x, y, imgData, label, maxW, maxH) {
   }
 }
 
-function addPhotoRow(doc, y, photos, labels, maxH = 45) {
+async function addPhotoRow(doc, y, photos, labels, maxH = 45) {
   const gap = 4, startX = 14
-  const count = photos.filter(Boolean).length
-  if (count === 0) return y
-  const maxW = (190 - gap * (count - 1)) / Math.min(count, 3)
+  const valid = photos.filter(Boolean)
+  if (valid.length === 0) return y
+  const count = Math.min(valid.length, 3)
+  const maxW = (190 - gap * (count - 1)) / count
 
   let x = startX
   let actualH = 0
-  photos.forEach((img, i) => {
-    if (!img) return
-    const { h } = addPhotoWithAspect(doc, x, y, img, labels[i] || '', maxW, maxH)
+  for (let i = 0; i < photos.length; i++) {
+    const img = photos[i]
+    if (!img) continue
+    const { h } = await addPhotoWithAspect(doc, x, y, img, labels[i] || '', maxW, maxH)
     actualH = Math.max(actualH, h)
     x += maxW + gap
     if (x > 170 && i < photos.length - 1) { x = startX; y += actualH + 8; actualH = 0 }
-  })
+  }
   return y + actualH + 8
 }
 
@@ -231,12 +243,34 @@ async function renderSketchToImage(damagePoints, busViews) {
       img.src = bgImage
     })
 
-    // Markierungspunkte zeichnen
-    pts.forEach(p => {
-      const x = (p.x / 100) * 800
-      const y = (p.y / 100) * 400
+    // Markierungspunkte zeichnen – relativ zum eingepassten Bild
+    // Die gespeicherten Koordinaten (p.x, p.y) sind % des sketch-canvas-wrap Containers
+    // Der Container hat das Bus-Bild proportional eingepasst
+    // Wir müssen dasselbe auf unserem Render-Canvas tun
+    let imgOffsetX = 0, imgOffsetY = 0, imgW = 800, imgH = 400
+    // Bereits in der onload-Closure berechnet – hier nochmal für die Punkte:
+    await new Promise(resolve => {
+      const img2 = new Image()
+      img2.onload = () => {
+        const ratio = img2.width / img2.height
+        let dw = 800, dh = 800 / ratio
+        if (dh > 400) { dh = 400; dw = 400 * ratio }
+        imgOffsetX = (800 - dw) / 2
+        imgOffsetY = (400 - dh) / 2
+        imgW = dw
+        imgH = dh
+        resolve()
+      }
+      img2.onerror = resolve
+      img2.src = bgImage
+    })
 
-      // Roter Kreis
+    pts.forEach(p => {
+      // p.x/p.y sind % relativ zum sketch-canvas-wrap (das das Bild enthält)
+      // → auf unser Canvas-Bild-Bereich mappen
+      const x = imgOffsetX + (p.x / 100) * imgW
+      const y = imgOffsetY + (p.y / 100) * imgH
+
       ctx.beginPath()
       ctx.arc(x, y, 16, 0, Math.PI * 2)
       ctx.fillStyle = '#CC0000'
@@ -245,7 +279,6 @@ async function renderSketchToImage(damagePoints, busViews) {
       ctx.lineWidth = 2
       ctx.stroke()
 
-      // Nummer
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 14px Arial'
       ctx.textAlign = 'center'
@@ -305,7 +338,7 @@ export async function generateKontrollePDF(data, driver) {
   if (isAbfahrt && d.licensePhoto) {
     y = checkPageBreak(doc, y, 70)
     y = addSectionTitle(doc, y, 'Führerscheinfoto')
-    const { h } = addPhotoWithAspect(doc, 14, y, d.licensePhoto, 'Führerschein', 120, 70)
+    const { h } = await addPhotoWithAspect(doc, 14, y, d.licensePhoto, 'Führerschein', 120, 70)
     y += h + 10
     y = addDivider(doc, y)
   }
@@ -316,13 +349,13 @@ export async function generateKontrollePDF(data, driver) {
   for (let i = 0; i < positions.length; i += 3) {
     y = checkPageBreak(doc, y, 55)
     const chunk = positions.slice(i, i + 3)
-    y = addPhotoRow(doc, y, chunk.map(p => d.busPhotos[p] || null), chunk, 42)
+    y = await addPhotoRow(doc, y, chunk.map(p => d.busPhotos[p] || null), chunk, 42)
   }
   y = addDivider(doc, y)
 
   y = checkPageBreak(doc, y, 60)
   y = addSectionTitle(doc, y, 'Zustandsfotos')
-  y = addPhotoRow(doc, y, [d.kmPhoto, d.oelPhoto, d.tankPhoto], ['Kilometerstand', 'Ölstand', 'Tankstand'], 42)
+  y = await addPhotoRow(doc, y, [d.kmPhoto, d.oelPhoto, d.tankPhoto], ['Kilometerstand', 'Ölstand', 'Tankstand'], 42)
   y = addDivider(doc, y)
 
   y = checkPageBreak(doc, y, 50)
@@ -431,7 +464,7 @@ export async function generateUnfallPDF(data, driver, busViews) {
   if (sketchImages && Object.keys(sketchImages).length > 0) {
     for (const [view, imgData] of Object.entries(sketchImages)) {
       y = checkPageBreak(doc, y, 65)
-      const { h } = addPhotoWithAspect(doc, 14, y, imgData, view, 182, 80)
+      const { h } = await addPhotoWithAspect(doc, 14, y, imgData, view, 182, 80)
       y += h + 6
     }
   } else if (d.damagePoints && d.damagePoints.length > 0) {
@@ -463,7 +496,7 @@ export async function generateUnfallPDF(data, driver, busViews) {
       y += 5
       for (let i = 0; i < photos.length; i += 3) {
         y = checkPageBreak(doc, y, 50)
-        y = addPhotoRow(doc, y, photos.slice(i, i + 3), photos.slice(i, i + 3).map((_, j) => `Foto ${i + j + 1}`), 42)
+        y = await addPhotoRow(doc, y, photos.slice(i, i + 3), photos.slice(i, i + 3).map((_, j) => `Foto ${i + j + 1}`), 42)
       }
     }
     if (d.extraPhotos?.length) {
@@ -475,7 +508,7 @@ export async function generateUnfallPDF(data, driver, busViews) {
       y += 5
       for (let i = 0; i < d.extraPhotos.length; i += 3) {
         y = checkPageBreak(doc, y, 50)
-        y = addPhotoRow(doc, y, d.extraPhotos.slice(i, i + 3), d.extraPhotos.slice(i, i+3).map((_,j)=>`Foto ${i+j+1}`), 42)
+        y = await addPhotoRow(doc, y, d.extraPhotos.slice(i, i + 3), d.extraPhotos.slice(i, i+3).map((_,j)=>`Foto ${i+j+1}`), 42)
       }
     }
     y = addDivider(doc, y)
