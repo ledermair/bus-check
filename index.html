@@ -11,13 +11,15 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
     <title>BusCheck – Ledermair</title>
-    <!-- Sofort-Skalierung: verhindert kleines Layout auf Android Chrome -->
+    <!-- Höhen-Fix für iOS Safari / Android Chrome URL-Bar -->
     <script>
       (function() {
-        var vw = window.innerWidth || document.documentElement.clientWidth || 360;
-        // Portrait 360dp → 18px, 412dp → 20.6px — clamp 16–24px
-        var base = Math.min(24, Math.max(16, vw / 20));
-        document.documentElement.style.fontSize = base + 'px';
+        function fixHeight() {
+          document.documentElement.style.setProperty('--real-vh', window.innerHeight + 'px');
+        }
+        fixHeight();
+        window.addEventListener('resize', fixHeight);
+        window.addEventListener('orientationchange', function() { setTimeout(fixHeight, 150); });
       })();
     </script>
   </head>

@@ -2,25 +2,20 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 
-// ─── Viewport-Höhe + Schriftgröße fix für iOS Safari + Android Chrome ───────
-// Android Chrome mit hohem DPR skaliert den Viewport anders als iOS.
-// Lösung: echte Viewport-Breite messen und font-size dynamisch anpassen.
+// ─── Viewport-Höhe fix für iOS Safari + Android Chrome ───────────────────
+// Schrift-Skalierung übernimmt jetzt CSS clamp(17px, 4.7vw, 24px) auf html
 
 function applyViewportFix() {
-  const vw = window.innerWidth
   const vh = window.innerHeight
-
-  // Höhe für app-shell setzen
   document.documentElement.style.setProperty('--real-vh', `${vh}px`)
   document.querySelectorAll('.app-shell').forEach(el => {
     el.style.height = `${vh}px`
   })
-
-  // Dynamische Basis-Schriftgröße:
-  // Portrait 360dp → 18px, 412dp → 20.6px — clamp 16–24px
-  const baseFontSize = Math.min(24, Math.max(16, vw / 20))
-  document.documentElement.style.fontSize = `${baseFontSize}px`
 }
+
+applyViewportFix()
+window.addEventListener('resize', applyViewportFix)
+window.addEventListener('orientationchange', () => setTimeout(applyViewportFix, 150))
 
 applyViewportFix()
 window.addEventListener('resize', applyViewportFix)
