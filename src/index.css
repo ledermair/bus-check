@@ -53,6 +53,7 @@ body {
   font-family: 'Barlow', sans-serif;
   background: var(--dark);
   color: var(--text);
+  font-size: 16px; /* Basis-Schriftgröße – verhindert Zoom auf iOS/Android */
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -62,11 +63,10 @@ body {
 .app-shell {
   height: 100vh;
   height: 100dvh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-width: 480px;
-  margin: 0 auto;
   background: var(--dark);
   position: relative;
 }
@@ -254,7 +254,7 @@ body {
 .card-title {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--yellow);
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -267,12 +267,12 @@ body {
 .field:last-child { margin-bottom: 0; }
 
 .field-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.9px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -284,8 +284,8 @@ body {
   background: var(--dark4);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius-sm);
-  padding: 11px 13px;
-  font-size: 15px;
+  padding: 13px 14px;
+  font-size: 16px; /* MINIMUM 16px - verhindert Auto-Zoom auf iOS/Android */
   color: var(--text);
   font-family: 'Barlow', sans-serif;
   outline: none;
@@ -297,7 +297,7 @@ body {
   background: rgba(26,92,42,0.1);
   border-color: rgba(26,92,42,0.3);
   color: #7DC48A;
-  font-size: 13px;
+  font-size: 16px; /* auch hier 16px */
 }
 .field-input.error { border-color: var(--red); }
 
@@ -313,6 +313,7 @@ textarea.field-input {
   resize: none;
   min-height: 88px;
   line-height: 1.5;
+  font-size: 16px;
 }
 
 .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -324,12 +325,12 @@ textarea.field-input {
 .toggle-btn {
   flex: 1;
   min-width: 60px;
-  padding: 11px 8px;
+  padding: 13px 8px;
   background: var(--dark4);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius-sm);
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   text-align: center;
@@ -408,10 +409,10 @@ textarea.field-input {
   border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 .status-row:last-child { border-bottom: none; }
-.status-label { font-size: 13px; color: var(--text-dim); }
-.status-val   { font-size: 13px; font-weight: 600; }
+.status-label { font-size: 15px; color: var(--text-dim); }
+.status-val   { font-size: 15px; font-weight: 600; }
 
-.tag { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+.tag { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
 .tag-ok  { background: rgba(26,92,42,0.2);  color: #7DC48A; }
 .tag-err { background: rgba(204,0,0,0.15);  color: #FF6666; }
 .tag-neu { background: rgba(245,216,0,0.15); color: var(--yellow); }
@@ -419,11 +420,11 @@ textarea.field-input {
 /* ─── Checklist ───────────────────────────── */
 .check-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 13px;
+  padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 15px;
 }
 .check-item:last-child { border-bottom: none; }
-.check-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+.check-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
 .check-dot.ok  { background: rgba(26,92,42,0.2);  color: #7DC48A; }
 .check-dot.err { background: rgba(204,0,0,0.15);  color: #FF6666; }
 
@@ -456,10 +457,10 @@ textarea.field-input {
 .cause-tag.on { background: rgba(245,216,0,0.1); border-color: var(--yellow); color: var(--yellow); }
 
 /* ─── Admin list ──────────────────────────── */
-.admin-item { background: var(--dark4); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 11px 13px; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between; }
-.admin-item-main { font-size: 14px; font-weight: 500; }
-.admin-item-sub  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.del-btn { width: 26px; height: 26px; background: rgba(204,0,0,0.08); border: 1px solid rgba(204,0,0,0.15); border-radius: 7px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; color: var(--red); flex-shrink: 0; transition: background 0.15s; }
+.admin-item { background: var(--dark4); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 13px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.admin-item-main { font-size: 16px; font-weight: 500; }
+.admin-item-sub  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.del-btn { width: 32px; height: 32px; background: rgba(204,0,0,0.08); border: 1px solid rgba(204,0,0,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--red); flex-shrink: 0; transition: background 0.15s; }
 .del-btn:active { background: rgba(204,0,0,0.18); }
 
 /* ─── Home screen ─────────────────────────── */
@@ -470,7 +471,6 @@ textarea.field-input {
   border-bottom: 1px solid var(--border-green);
   position: relative;
 }
-/* Roter Akzentstreifen wie im Logo */
 .home-hero::after {
   content: '';
   position: absolute;
@@ -484,17 +484,14 @@ textarea.field-input {
   width: auto;
   margin: 0 auto 8px;
   display: block;
-  /* Logo ist weiß auf dunklem BG – original hat weißen Hintergrund,
-     daher invertieren wir es für dunklen Modus */
   filter: brightness(0) invert(1);
 }
 
-.home-brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: 1px; color: var(--text); }
+.home-brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 34px; letter-spacing: 1px; color: var(--text); }
 .home-brand .yellow { color: var(--yellow); }
 .home-brand .green  { color: #7DC48A; }
-.home-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 1.2px; text-transform: uppercase; }
+.home-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; letter-spacing: 1.2px; text-transform: uppercase; }
 
-/* Roter Unterstrich wie im Logo */
 .home-red-line {
   width: 80px; height: 2px;
   background: var(--red);
@@ -507,52 +504,52 @@ textarea.field-input {
   background: var(--dark3);
   border: 1px solid var(--border-green);
   border-radius: var(--radius);
-  padding: 11px 14px;
+  padding: 13px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .d-avatar {
-  width: 34px; height: 34px;
+  width: 40px; height: 40px;
   background: linear-gradient(135deg, var(--green), var(--green-light));
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 13px; color: #fff;
+  font-weight: 700; font-size: 15px; color: #fff;
   flex-shrink: 0;
 }
-.d-name { font-weight: 600; font-size: 13px; }
-.d-nr   { font-size: 11px; color: var(--text-muted); }
+.d-name { font-weight: 600; font-size: 15px; }
+.d-nr   { font-size: 12px; color: var(--text-muted); }
 
 /* Main action cards */
 .main-card {
   background: var(--dark3);
   border: 1px solid var(--border-green);
   border-radius: var(--radius);
-  padding: 17px;
+  padding: 18px;
   display: flex; align-items: center; gap: 14px;
-  cursor: pointer; transition: all 0.15s; margin-bottom: 10px;
+  cursor: pointer; transition: all 0.15s; margin-bottom: 12px;
 }
 .main-card:active { transform: scale(0.98); background: var(--dark4); }
 .main-card.gold-card { background: linear-gradient(135deg, rgba(26,92,42,0.15) 0%, rgba(26,92,42,0.05) 100%); border-color: rgba(26,92,42,0.4); }
 .main-card.red-card  { background: linear-gradient(135deg, rgba(204,0,0,0.1) 0%, rgba(204,0,0,0.03) 100%); border-color: rgba(204,0,0,0.2); }
 
-.mc-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.mc-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
 .ic-gold  { background: rgba(26,92,42,0.2);   }
 .ic-green { background: rgba(245,216,0,0.12); }
 .ic-red   { background: rgba(204,0,0,0.12);   }
-.mc-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; }
-.mc-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.mc-arrow { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+.mc-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; }
+.mc-sub   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.mc-arrow { margin-left: auto; color: var(--text-muted); font-size: 20px; }
 
 /* ─── Success screen ──────────────────────── */
 .success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; gap: 14px; }
-.success-icon { width: 74px; height: 74px; background: rgba(26,92,42,0.15); border: 2px solid var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 6px; }
-.success-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; }
-.success-text  { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
-.email-badge   { width: 100%; background: var(--dark3); border: 1px solid var(--border-green); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; text-align: left; }
+.success-icon { width: 80px; height: 80px; background: rgba(26,92,42,0.15); border: 2px solid var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 6px; }
+.success-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 28px; }
+.success-text  { font-size: 15px; color: var(--text-muted); line-height: 1.6; }
+.email-badge   { width: 100%; background: var(--dark3); border: 1px solid var(--border-green); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; text-align: left; }
 
 /* ─── Driver picker ───────────────────────── */
-.driver-opt { background: var(--dark4); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius); padding: 14px; margin-bottom: 9px; cursor: pointer; display: flex; align-items: center; gap: 13px; transition: all 0.15s; }
+.driver-opt { background: var(--dark4); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 13px; transition: all 0.15s; }
 .driver-opt:active { transform: scale(0.98); }
 .driver-opt.sel { background: rgba(26,92,42,0.12); border-color: rgba(26,92,42,0.4); }
 
