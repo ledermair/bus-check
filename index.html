@@ -15,8 +15,8 @@
     <script>
       (function() {
         var vw = window.innerWidth || document.documentElement.clientWidth || 360;
-        // 360dp → 16px, 412dp → 18.4px, 480dp → 21.3px — clamp 14–22px
-        var base = Math.min(22, Math.max(14, vw / 22.5));
+        // Portrait 360dp → 18px, 412dp → 20.6px — clamp 16–24px
+        var base = Math.min(24, Math.max(16, vw / 20));
         document.documentElement.style.fontSize = base + 'px';
       })();
     </script>

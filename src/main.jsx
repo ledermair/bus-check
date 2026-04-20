@@ -17,10 +17,8 @@ function applyViewportFix() {
   })
 
   // Dynamische Basis-Schriftgröße:
-  // Ziel: auf einem 360dp Phone soll font-size = 16px sein
-  // Auf 390dp (iPhone 14) = 17.3px, auf 412dp (Pixel 7) = 18.3px
-  // Clamp: min 14px, max 20px
-  const baseFontSize = Math.min(20, Math.max(14, vw / 22.5))
+  // Portrait 360dp → 18px, 412dp → 20.6px — clamp 16–24px
+  const baseFontSize = Math.min(24, Math.max(16, vw / 20))
   document.documentElement.style.fontSize = `${baseFontSize}px`
 }
 
