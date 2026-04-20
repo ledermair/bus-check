@@ -2,21 +2,31 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 
-// ─── Viewport-Höhe fix für iOS Safari + Android Chrome ───────────────────
-// Problem: 100vh ist auf beiden Plattformen unterschiedlich
-// Lösung: echte Fensterhöhe per JS messen und als CSS-Variable setzen
-function setVH() {
+// ─── Viewport-Höhe + Schriftgröße fix für iOS Safari + Android Chrome ───────
+// Android Chrome mit hohem DPR skaliert den Viewport anders als iOS.
+// Lösung: echte Viewport-Breite messen und font-size dynamisch anpassen.
+
+function applyViewportFix() {
+  const vw = window.innerWidth
   const vh = window.innerHeight
+
+  // Höhe für app-shell setzen
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`)
   document.querySelectorAll('.app-shell').forEach(el => {
     el.style.height = `${vh}px`
   })
-  // Auch für HomeScreen der kein app-shell verwendet
-  document.documentElement.style.setProperty('--real-vh', `${vh}px`)
+
+  // Dynamische Basis-Schriftgröße:
+  // Ziel: auf einem 360dp Phone soll font-size = 16px sein
+  // Auf 390dp (iPhone 14) = 17.3px, auf 412dp (Pixel 7) = 18.3px
+  // Clamp: min 14px, max 20px
+  const baseFontSize = Math.min(20, Math.max(14, vw / 22.5))
+  document.documentElement.style.fontSize = `${baseFontSize}px`
 }
 
-setVH()
-window.addEventListener('resize', setVH)
-window.addEventListener('orientationchange', () => setTimeout(setVH, 100))
+applyViewportFix()
+window.addEventListener('resize', applyViewportFix)
+window.addEventListener('orientationchange', () => setTimeout(applyViewportFix, 150))
 
 // ─── Alten localStorage aufräumen (Fotos die früher gespeichert wurden) ──
 try {

@@ -11,6 +11,15 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
     <title>BusCheck – Ledermair</title>
+    <!-- Sofort-Skalierung: verhindert kleines Layout auf Android Chrome -->
+    <script>
+      (function() {
+        var vw = window.innerWidth || document.documentElement.clientWidth || 360;
+        // 360dp → 16px, 412dp → 18.4px, 480dp → 21.3px — clamp 14–22px
+        var base = Math.min(22, Math.max(14, vw / 22.5));
+        document.documentElement.style.fontSize = base + 'px';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
